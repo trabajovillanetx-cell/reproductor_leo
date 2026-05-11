@@ -1,0 +1,15 @@
+Íconos del menú lateral (rail) del catálogo
+==========================================
+
+1) Preferí PNG o SVG con canal alpha (fondo realmente transparente).
+
+2) Nombres esperados (ver config/streaming_rail_icons.php):
+
+   inicio.png · peliculas.png · series.png · estrenos.png · tv.png · buscar.png
+
+3) Exportá como PNG desde Canva/editor: no guardes como JPG; si el archivo
+   empieza con bytes PNG pero tiene extensión .svg, renombralo a .png.
+
+4) Si falta estrenos.png, se usa el ícono vectorial de Estrenos.
+
+Si falta un archivo, ese botón sigue con el SVG por defecto.

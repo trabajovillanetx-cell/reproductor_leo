@@ -1,0 +1,703 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+[x-cloak] {
+    display: none !important;
+}
+
+/* ——— Panel + dashboard admin (estética cyber / neón) ——— */
+.admin-cyber-panel-body {
+    background: linear-gradient(168deg, #0b1228 0%, #0a0e1a 42%, #0d1528 100%);
+}
+
+.admin-cyber-panel-body aside.fixed,
+.admin-cyber-panel-body aside.lg\:static {
+    border-right-color: rgba(34, 211, 238, 0.12) !important;
+    background: linear-gradient(180deg, #06080f 0%, #0a0f1c 48%, #0c1424 100%) !important;
+    box-shadow: inset -1px 0 0 rgba(168, 85, 247, 0.06);
+}
+
+.admin-cyber-panel-main {
+    background:
+        radial-gradient(ellipse 90% 60% at 50% -8%, rgba(34, 211, 238, 0.07), transparent 52%),
+        radial-gradient(ellipse 55% 40% at 100% 50%, rgba(192, 38, 211, 0.05), transparent 45%);
+}
+
+.admin-cyber-panel-body .admin-panel-main {
+    @apply text-slate-100;
+}
+
+/* Mismas tarjetas que en el dashboard cyber, en cualquier pantalla del panel */
+.admin-cyber-panel-body .admin-cyber-card {
+    border-radius: 0.875rem;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background:
+        linear-gradient(165deg, rgba(32, 26, 52, 0.55) 0%, transparent 42%),
+        linear-gradient(145deg, #141022 0%, #110d1f 55%, #0a0712 100%);
+    box-shadow:
+        0 0 22px rgba(34, 211, 238, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04),
+        0 18px 40px -18px rgba(0, 0, 0, 0.85);
+}
+
+.admin-cyber-panel-body .admin-cyber-card:hover {
+    border-color: rgba(34, 211, 238, 0.14);
+    box-shadow:
+        0 0 0 1px rgba(192, 38, 211, 0.12),
+        0 0 28px rgba(34, 211, 238, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05),
+        0 22px 44px -16px rgba(0, 0, 0, 0.9);
+}
+
+.admin-cyber-panel-header .text-sky-300\/95 {
+    color: rgba(103, 232, 249, 0.92);
+    text-shadow: 0 0 18px rgba(34, 211, 238, 0.35);
+}
+
+.admin-cyber-panel-header button[type='submit'] {
+    border-color: rgba(34, 211, 238, 0.35);
+    background: rgba(6, 182, 212, 0.12);
+    box-shadow: 0 0 18px rgba(34, 211, 238, 0.12);
+}
+
+.admin-cyber-panel-header button[type='submit']:hover {
+    background: rgba(34, 211, 238, 0.2);
+}
+
+.cyber-stack {
+    --cyber-card: #110d1f;
+    --cyber-card-edge: rgba(34, 211, 238, 0.14);
+    --cyber-glow-cyan: 0 0 22px rgba(34, 211, 238, 0.22);
+}
+
+.cyber-stack .admin-cyber-card {
+    border-radius: 0.875rem;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background:
+        linear-gradient(165deg, rgba(32, 26, 52, 0.55) 0%, transparent 42%),
+        linear-gradient(145deg, #141022 0%, var(--cyber-card) 55%, #0a0712 100%);
+    box-shadow:
+        var(--cyber-glow-cyan),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04),
+        0 18px 40px -18px rgba(0, 0, 0, 0.85);
+}
+
+.cyber-stack .admin-cyber-card:hover {
+    border-color: var(--cyber-card-edge);
+    box-shadow:
+        0 0 0 1px rgba(192, 38, 211, 0.12),
+        0 0 28px rgba(34, 211, 238, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05),
+        0 22px 44px -16px rgba(0, 0, 0, 0.9);
+}
+
+/* Donut / anillo de progreso (conic-gradient) */
+.admin-cyber-donut {
+    --p: 0;
+    --from: #22d3ee;
+    --to: #c026d3;
+    display: flex;
+    width: 7.25rem;
+    height: 7.25rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    padding: 0.32rem;
+    border-radius: 50%;
+    background: conic-gradient(
+        from -90deg,
+        var(--from) 0deg,
+        var(--to) calc(3.6deg * var(--p)),
+        #0d0a16 calc(3.6deg * var(--p))
+    );
+    box-shadow:
+        0 0 22px rgba(34, 211, 238, 0.2),
+        0 0 40px rgba(192, 38, 211, 0.1),
+        inset 0 0 20px rgba(0, 0, 0, 0.35);
+}
+
+.admin-cyber-donut-inner {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 28%, #1f1a32 0%, #070510 72%);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.admin-cyber-donut-value {
+    font-size: 1.5rem;
+    font-weight: 900;
+    line-height: 1;
+    color: #f8fafc;
+    text-shadow: 0 0 20px rgba(34, 211, 238, 0.25);
+    font-variant-numeric: tabular-nums;
+}
+
+.admin-cyber-donut-sublabel {
+    margin-top: 0.2rem;
+    max-width: 5.5rem;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+    text-align: center;
+    font-size: 0.5625rem;
+    font-weight: 800;
+    line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.42);
+}
+
+.admin-cyber-donut--sm {
+    width: 3.65rem;
+    height: 3.65rem;
+    padding: 0.2rem;
+    box-shadow:
+        0 0 12px rgba(34, 211, 238, 0.18),
+        inset 0 0 12px rgba(0, 0, 0, 0.4);
+}
+
+.admin-cyber-donut--sm .admin-cyber-donut-pct {
+    font-size: 0.65rem;
+    font-weight: 900;
+    line-height: 1;
+    color: #f1f5f9;
+    text-shadow: 0 0 8px rgba(34, 211, 238, 0.35);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Barras de biblioteca por tipo */
+.admin-cyber-bar-track {
+    height: 0.45rem;
+    overflow: hidden;
+    border-radius: 9999px;
+    background: rgba(0, 0, 0, 0.45);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.admin-cyber-bar-fill {
+    min-width: 0;
+    transition: width 0.5s ease-out;
+}
+
+.admin-cyber-bar-fill--cyan {
+    box-shadow: 0 0 14px rgba(34, 211, 238, 0.45);
+}
+
+.admin-cyber-bar-fill--lime {
+    box-shadow: 0 0 14px rgba(163, 230, 53, 0.45);
+}
+
+.admin-cyber-bar-fill--magenta {
+    box-shadow: 0 0 14px rgba(217, 70, 239, 0.45);
+}
+
+.admin-cyber-bar-fill--amber {
+    box-shadow: 0 0 14px rgba(251, 191, 36, 0.45);
+}
+
+/* ——— Cliente final: catálogo / streaming-shell ——— */
+.streaming-shell-bg--deep {
+    background: #050814;
+}
+
+.streaming-shell-bg--glow {
+    background:
+        radial-gradient(ellipse 92% 58% at 50% -18%, rgba(34, 211, 238, 0.11), transparent 52%),
+        radial-gradient(ellipse 55% 50% at 100% 85%, rgba(192, 38, 211, 0.09), transparent 48%),
+        linear-gradient(168deg, rgba(14, 20, 40, 0.97) 0%, transparent 55%),
+        linear-gradient(145deg, #0c1228 0%, #0a0e1a 50%, #080c18 100%);
+}
+
+.streaming-shell-bg--photo-wash {
+    background: linear-gradient(to top, rgba(5, 8, 20, 0.62) 0%, rgba(6, 8, 18, 0.48) 42%, rgba(10, 8, 22, 0.38) 100%);
+}
+
+body.streaming-cyber-shell > div.relative.flex {
+    position: relative;
+    z-index: 2;
+}
+
+body.streaming-cyber-shell .streaming-cyber-rail a[aria-current='page'] {
+    color: #f8fafc !important;
+    box-shadow:
+        0 0 24px rgba(34, 211, 238, 0.38),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+body.streaming-cyber-shell .streaming-cyber-rail a[aria-current='page']:hover {
+    box-shadow:
+        0 0 28px rgba(34, 211, 238, 0.48),
+        inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+body.streaming-cyber-shell .streaming-rail-icon-img {
+    background: transparent !important;
+    filter: drop-shadow(0 1px 3px rgb(0 0 0 / 0.55));
+}
+
+body.streaming-cyber-shell #buscar-catalogo {
+    background: rgba(5, 8, 15, 0.92) !important;
+    border-color: rgba(34, 211, 238, 0.14) !important;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+}
+
+body.streaming-cyber-shell .streaming-cyber-poster {
+    border-radius: 0.875rem;
+    box-shadow:
+        0 0 0 1px rgba(34, 211, 238, 0.1),
+        0 14px 36px -14px rgba(0, 0, 0, 0.88);
+}
+
+/**
+ * Una sola caja 2:3 para subcarpetas (“Títulos en esta carpeta”) y catálogo (“Reproducir desde aquí” / Estrenos).
+ * Imagen y “Sin carátula” comparten el mismo marco; sin scale en hover (evita que “se vean” distintos tamaños).
+ */
+.streaming-poster-tile {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    aspect-ratio: 2 / 3;
+    min-height: 0;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.streaming-poster-tile > img {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+.streaming-poster-tile > .streaming-poster-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+body.streaming-cyber-shell .group:hover .streaming-cyber-poster {
+    box-shadow:
+        0 0 0 1px rgba(217, 70, 239, 0.35),
+        0 0 24px rgba(34, 211, 238, 0.12),
+        0 18px 40px -12px rgba(0, 0, 0, 0.9);
+}
+
+body.streaming-cyber-shell nav[aria-label='Ruta en el catálogo'] {
+    border-color: rgba(34, 211, 238, 0.12) !important;
+    background: rgba(6, 8, 16, 0.65) !important;
+    box-shadow: 0 0 24px rgba(0, 0, 0, 0.35);
+}
+
+body.streaming-cyber-shell .streaming-cyber-empty {
+    border-color: rgba(34, 211, 238, 0.12) !important;
+    background:
+        linear-gradient(165deg, rgba(32, 26, 52, 0.4) 0%, transparent 45%),
+        linear-gradient(145deg, rgba(17, 13, 31, 0.92) 0%, rgba(8, 6, 14, 0.96) 100%) !important;
+    box-shadow:
+        0 0 28px rgba(34, 211, 238, 0.08),
+        0 20px 50px -20px rgba(0, 0, 0, 0.75);
+}
+
+/* Login streaming (misma línea visual) */
+body.streaming-cyber-login {
+    color: #f8fafc;
+}
+
+.streaming-cyber-login-bg {
+    background: linear-gradient(168deg, #0b1228 0%, #0a0e1a 42%, #0d1528 100%);
+}
+
+.streaming-cyber-login-wash {
+    background:
+        radial-gradient(ellipse 90% 55% at 50% -15%, rgba(34, 211, 238, 0.12), transparent 52%),
+        radial-gradient(ellipse 60% 50% at 100% 100%, rgba(192, 38, 211, 0.1), transparent 45%);
+}
+
+/* Elegir perfil (antes del catálogo) */
+body.streaming-cyber-profiles {
+    background: linear-gradient(168deg, #0b1228 0%, #0a0e1a 45%, #0d1528 100%) !important;
+}
+
+body.streaming-cyber-profiles .dv-profile-orb {
+    background: linear-gradient(145deg, #1e1834 0%, #0a0714 100%);
+    box-shadow:
+        0 0 0 1px rgba(34, 211, 238, 0.12),
+        0 18px 48px rgba(0, 0, 0, 0.65);
+}
+
+.streaming-cyber-player {
+    background: linear-gradient(180deg, #050814 0%, #0a0e1a 100%);
+}
+
+/**
+ * Modal “Perfiles”: el panel general es oscuro; esto fuerza gris + negro + verde/ámbar
+ * para que no lo pisen las utilidades dark: del layout.
+ */
+.customer-profiles-modal-trigger {
+    background-color: #e7e7e7 !important;
+    color: #0a0a0a !important;
+    border: 2px solid #9ca3af !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+.customer-profiles-modal-popup {
+    background-color: #c4c4c4 !important;
+    color: #0a0a0a !important;
+    border: 2px solid #525252 !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45);
+}
+.customer-profiles-modal-popup .cpm-heading,
+.customer-profiles-modal-popup .cpm-text,
+.customer-profiles-modal-popup h3 {
+    color: #0a0a0a !important;
+}
+.customer-profiles-modal-circle-num {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 9999px;
+    font-weight: 900;
+    font-size: 0.875rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+@media (min-width: 640px) {
+    .customer-profiles-modal-circle-num {
+        width: 2.5rem;
+        height: 2.5rem;
+        font-size: 1rem;
+    }
+}
+.customer-profiles-modal-circle-available {
+    background-color: #22c55e !important;
+    color: #000000 !important;
+    border: 2px solid #166534 !important;
+    box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.35);
+}
+.customer-profiles-modal-circle-sold {
+    background-color: #facc15 !important;
+    color: #000000 !important;
+    border: 2px solid #a16207 !important;
+    box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.35);
+}
+.customer-profiles-modal-circle-empty {
+    background-color: #d4d4d4 !important;
+    color: #171717 !important;
+    border: 2px dashed #737373 !important;
+    font-size: 0.625rem;
+    font-weight: 700;
+}
+.customer-profiles-modal-popup .cpm-big-circle {
+    width: 4rem;
+    height: 4rem;
+    font-size: 1.5rem;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    flex-shrink: 0;
+}
+@media (min-width: 640px) {
+    .customer-profiles-modal-popup .cpm-big-circle {
+        width: 4.5rem;
+        height: 4.5rem;
+        font-size: 1.75rem;
+    }
+}
+.customer-profiles-modal-popup .cpm-slot {
+    background-color: #dcdcdc !important;
+    border: 2px solid #6b7280 !important;
+    color: #0a0a0a !important;
+}
+.customer-profiles-modal-popup .cpm-slot:hover:not(:disabled) {
+    background-color: #d0d0d0 !important;
+}
+.customer-profiles-modal-popup .cpm-footer {
+    background-color: #b0b0b0 !important;
+    border-top: 2px solid #525252 !important;
+}
+.customer-profiles-modal-popup .cpm-btn-close {
+    background-color: #e5e5e5 !important;
+    color: #0a0a0a !important;
+    border: 2px solid #404040 !important;
+}
+.customer-profiles-modal-popup .cpm-btn-close:hover {
+    background-color: #f5f5f5 !important;
+}
+
+/* Login: línea de “escaneo” sobre la huella (una pasada antes de enviar el formulario) */
+@keyframes login-fingerprint-scan {
+    0% {
+        top: 8%;
+        opacity: 0.15;
+    }
+    15% {
+        opacity: 1;
+    }
+    85% {
+        opacity: 1;
+    }
+    100% {
+        top: 88%;
+        opacity: 0.15;
+    }
+}
+
+.login-fingerprint-scan-line {
+    animation: login-fingerprint-scan 2.15s cubic-bezier(0.45, 0, 0.2, 1) forwards;
+}
+
+@keyframes login-fingerprint-glow {
+    0%,
+    100% {
+        filter: drop-shadow(0 0 6px rgba(250, 204, 21, 0.45));
+    }
+    50% {
+        filter: drop-shadow(0 0 14px rgba(52, 211, 153, 0.75)) drop-shadow(0 0 20px rgba(59, 130, 246, 0.5));
+    }
+}
+
+.login-fingerprint-icon-pulse {
+    animation: login-fingerprint-glow 2s ease-in-out infinite;
+}
+
+@layer components {
+    .admin-label {
+        @apply mb-2 block text-sm font-semibold tracking-tight text-slate-700 dark:text-slate-200;
+    }
+
+    .admin-input,
+    .admin-select,
+    .admin-textarea {
+        @apply w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3.5 text-base text-slate-900 shadow-sm transition
+            placeholder:text-slate-400
+            focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/15
+            dark:border-slate-600 dark:bg-slate-800/90 dark:text-slate-100
+            dark:placeholder:text-slate-500 dark:focus:border-indigo-400 dark:focus:ring-indigo-400/20;
+    }
+
+    .admin-textarea {
+        @apply min-h-[8rem] resize-y;
+    }
+
+    .admin-select {
+        @apply cursor-pointer;
+    }
+
+    .admin-card {
+        @apply rounded-2xl border border-slate-200/90 bg-white/95 p-6 shadow-lg shadow-slate-300/30 ring-1 ring-slate-100/80 backdrop-blur-sm
+            dark:border-slate-700/90 dark:bg-slate-900/95 dark:shadow-black/40 dark:ring-slate-800/80;
+    }
+
+    .admin-table-wrap {
+        @apply overflow-hidden rounded-2xl border border-slate-200/90 bg-white/95 shadow-lg shadow-slate-300/25 ring-1 ring-slate-100/80
+            dark:border-slate-700/80 dark:bg-slate-900/95 dark:shadow-black/40 dark:ring-slate-800/70;
+    }
+
+    .admin-table {
+        @apply min-w-full divide-y divide-slate-200 text-base dark:divide-slate-800;
+    }
+
+    .admin-table thead {
+        @apply bg-gradient-to-r from-slate-50 to-indigo-50/50 dark:from-slate-800 dark:to-indigo-950/40;
+    }
+
+    .admin-table th {
+        @apply px-5 py-4 text-left text-sm font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300;
+    }
+
+    .admin-table td {
+        @apply px-5 py-4 text-slate-800 dark:text-slate-200;
+    }
+
+    .admin-btn-primary {
+        @apply inline-flex items-center justify-center rounded-xl bg-indigo-600 px-7 py-3.5 text-base font-semibold text-white shadow-lg shadow-indigo-600/25 transition
+            hover:bg-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/35 active:scale-[0.99]
+            dark:shadow-indigo-900/50;
+    }
+
+    .admin-btn-secondary {
+        @apply inline-flex items-center justify-center rounded-xl border-2 border-slate-200 bg-white px-6 py-3.5 text-base font-semibold text-slate-700 transition
+            hover:border-slate-300 hover:bg-slate-50
+            dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:border-slate-500 dark:hover:bg-slate-700;
+    }
+
+    .admin-hint {
+        @apply rounded-xl border border-indigo-200/80 bg-indigo-50/90 p-5 text-sm leading-relaxed text-indigo-950 dark:border-indigo-800/80 dark:bg-indigo-950/50 dark:text-indigo-100;
+    }
+
+    /** Área principal del panel (sobre fondo azul rey): texto ayuda legible */
+    .admin-panel-main {
+        @apply text-blue-50;
+    }
+
+    .admin-panel-hint {
+        @apply rounded-xl border border-white/25 bg-black/25 px-4 py-3.5 text-sm leading-relaxed text-white shadow-inner backdrop-blur-sm;
+    }
+
+    .admin-panel-hint code {
+        @apply rounded-md bg-white/20 px-1.5 py-0.5 font-mono text-xs text-white;
+    }
+
+    .admin-panel-hint strong {
+        @apply font-semibold text-white;
+    }
+
+    .admin-panel-link {
+        @apply font-medium text-sky-200 underline decoration-sky-200/70 underline-offset-2 transition hover:text-white hover:decoration-white;
+    }
+
+    .admin-btn-ghost-light {
+        @apply inline-flex items-center justify-center rounded-xl border-2 border-white/45 bg-white/10 px-6 py-3 text-base font-semibold text-white shadow-sm backdrop-blur-sm transition hover:bg-white/20 focus:outline-none focus:ring-4 focus:ring-white/25;
+    }
+
+    .admin-input-on-royal {
+        @apply rounded-xl border-2 border-white/40 bg-white/95 px-4 py-3 text-base text-slate-900 placeholder:text-slate-500 shadow-md focus:border-white focus:outline-none focus:ring-4 focus:ring-white/35;
+    }
+
+    /** Input file en panel oscuro: el botón nativo no herede colores ilegibles (Chrome / modo oscuro). */
+    .folder-poster-file-input::file-selector-button,
+    .folder-poster-file-input::-webkit-file-upload-button {
+        margin-right: 1rem;
+        cursor: pointer;
+        border-radius: 0.5rem;
+        border: 2px solid rgba(165, 180, 252, 0.55);
+        background-color: rgb(79 70 229);
+        color: #fff;
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        font-weight: 700;
+        box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
+    }
+
+    .folder-poster-file-input:hover::file-selector-button,
+    .folder-poster-file-input:hover::-webkit-file-upload-button {
+        background-color: rgb(99 102 241);
+        border-color: rgba(224, 231, 255, 0.75);
+    }
+
+    /** Tarjeta RaiDrive (setup): evita que el color claro del panel se herede sobre fondo blanco */
+    .raidrive-setup-card {
+        color: rgb(15 23 42);
+    }
+
+    .raidrive-code-inline {
+        @apply rounded-md border border-slate-400 bg-slate-100 px-1.5 py-0.5 font-mono text-sm font-semibold text-slate-900;
+    }
+
+    .raidrive-code-block {
+        @apply block w-full overflow-x-auto rounded-lg border-2 border-slate-700 bg-slate-900 p-4 font-mono text-sm font-medium leading-relaxed text-emerald-100 shadow-inner;
+    }
+
+    /**
+     * Catálogo /app: columnas con minmax(0,1fr) para que imágenes con tamaño intrínseco grande
+     * no desborden ni rompan la grilla (Tailwind grid-cols-* a veces no basta si hay CSS heredado).
+     */
+    .streaming-catalog-grid {
+        display: grid;
+        width: 100%;
+        max-width: 100%;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: 1rem;
+        row-gap: 2rem;
+        align-items: start;
+    }
+
+    .streaming-catalog-grid > article {
+        display: flex;
+        min-width: 0;
+        min-height: 0;
+        flex-direction: column;
+    }
+
+    .streaming-catalog-grid > article > a {
+        display: flex;
+        min-width: 0;
+        flex: 1 1 auto;
+        flex-direction: column;
+    }
+
+    @media (min-width: 640px) {
+        .streaming-catalog-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            column-gap: 1.25rem;
+            row-gap: 2rem;
+        }
+    }
+
+    @media (min-width: 768px) {
+        .streaming-catalog-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            column-gap: 1.5rem;
+        }
+    }
+
+    @media (min-width: 1024px) {
+        .streaming-catalog-grid {
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+        }
+    }
+
+    @media (min-width: 1280px) {
+        .streaming-catalog-grid {
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+        }
+    }
+
+    /**
+     * Solo carpetas (lib): columnas de ancho FIJO (sin 1fr) para que todas las
+     * carátulas —con imagen o “sin carátula”— midan exactamente igual en cada fila.
+     */
+    .streaming-folder-grid {
+        display: grid;
+        width: 100%;
+        max-width: 100%;
+        grid-template-columns: repeat(auto-fill, 4.75rem);
+        justify-content: start;
+        column-gap: 0.45rem;
+        row-gap: 0.85rem;
+    }
+
+    .streaming-folder-grid > article {
+        display: flex;
+        width: 100%;
+        min-width: 0;
+        min-height: 0;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .streaming-folder-grid > article > a {
+        min-height: 0;
+    }
+
+    @media (min-width: 640px) {
+        .streaming-folder-grid {
+            grid-template-columns: repeat(auto-fill, 5rem);
+            column-gap: 0.5rem;
+            row-gap: 0.95rem;
+        }
+    }
+
+    @media (min-width: 1024px) {
+        .streaming-folder-grid {
+            column-gap: 0.55rem;
+            row-gap: 1rem;
+        }
+    }
+}
