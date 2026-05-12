@@ -170,6 +170,36 @@
     font-variant-numeric: tabular-nums;
 }
 
+/* Dashboard admin: donut un poco más chico en carrusel móvil */
+.admin-cyber-donut--dashboard-sm {
+    width: 6.25rem;
+    height: 6.25rem;
+}
+
+.admin-cyber-donut--dashboard-sm .admin-cyber-donut-value {
+    font-size: 1.25rem;
+}
+
+@media (min-width: 640px) {
+    .admin-cyber-donut--dashboard-sm {
+        width: 7.25rem;
+        height: 7.25rem;
+    }
+
+    .admin-cyber-donut--dashboard-sm .admin-cyber-donut-value {
+        font-size: 1.5rem;
+    }
+}
+
+/* Menú rápido <details> en dashboard (sin triángulo nativo feo) */
+.admin-dashboard-mobile-menu > summary {
+    list-style: none;
+}
+
+.admin-dashboard-mobile-menu > summary::-webkit-details-marker {
+    display: none;
+}
+
 /* Barras de biblioteca por tipo */
 .admin-cyber-bar-track {
     height: 0.45rem;

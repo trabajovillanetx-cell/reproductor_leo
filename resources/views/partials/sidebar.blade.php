@@ -4,21 +4,27 @@
     $navActive = 'text-center bg-white text-[#0a1744] shadow-lg shadow-black/25';
 @endphp
 
-<div x-data="{ open: false }" class="lg:fixed lg:inset-y-0 lg:z-40 lg:flex lg:h-screen lg:w-64 lg:flex-col lg:overflow-hidden">
-    <div class="relative flex min-h-20 items-center justify-center border-b border-white/10 bg-[#050f2e] px-4 py-3 lg:hidden">
-        <a href="{{ route('dashboard') }}" class="text-center text-lg font-bold tracking-wide text-white">{{ config('app.name') }}</a>
-        <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-2 text-white/80 hover:bg-white/10" @click="open = !open" aria-label="Menú">
-            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-        </button>
-    </div>
-
-    <aside :class="open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
-           class="fixed inset-y-0 left-0 z-50 flex h-full w-64 min-h-0 flex-col transform border-r border-white/10 bg-gradient-to-b from-[#050f2e] via-[#0a1f54] to-[#0e2a72] shadow-2xl shadow-black/40 transition-transform lg:static lg:h-full lg:min-h-0 lg:flex-1 lg:translate-x-0">
-        <div class="flex shrink-0 min-h-[5.75rem] flex-col items-center justify-center border-b border-white/10 px-4 py-6 text-center">
-            <a href="{{ route('dashboard') }}" class="text-xl font-bold leading-tight tracking-wide text-white drop-shadow-sm sm:text-2xl">{{ config('app.name') }}</a>
-            <span class="mt-2 text-[10px] font-semibold uppercase tracking-[0.35em] text-sky-300/80">Panel</span>
+<div class="lg:fixed lg:inset-y-0 lg:z-40 lg:flex lg:h-screen lg:w-64 lg:flex-col lg:overflow-hidden">
+    <aside
+        :class="open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+        class="fixed inset-y-0 left-0 z-50 flex h-full w-[min(100vw,18rem)] max-w-[18rem] min-h-0 flex-col border-r border-white/10 bg-gradient-to-b from-[#050f2e] via-[#0a1f54] to-[#0e2a72] shadow-2xl shadow-black/40 transition-transform duration-200 ease-out lg:static lg:z-auto lg:h-full lg:w-64 lg:max-w-none lg:flex-1 lg:translate-x-0 lg:shadow-none"
+        @click="if ($event.target.closest('a')) { open = false }"
+    >
+        <div class="flex shrink-0 items-center justify-between gap-2 border-b border-white/10 px-3 py-4 sm:px-4">
+            <div class="min-w-0 flex-1 text-center lg:block">
+                <a href="{{ route('dashboard') }}" class="block truncate text-lg font-bold leading-tight tracking-wide text-white drop-shadow-sm sm:text-xl" @click="open = false">{{ config('app.name') }}</a>
+                <span class="mt-1 block text-[10px] font-semibold uppercase tracking-[0.35em] text-sky-300/80">Panel</span>
+            </div>
+            <button
+                type="button"
+                class="shrink-0 rounded-lg p-2 text-white/85 hover:bg-white/10 lg:hidden"
+                @click="open = false"
+                aria-label="Cerrar menú"
+            >
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
         </div>
-        <nav class="min-h-0 flex-1 space-y-1.5 overflow-y-auto overflow-x-hidden overscroll-y-contain p-3 pb-6 text-sm font-semibold [scrollbar-gutter:stable]">
+        <nav class="min-h-0 flex-1 space-y-1.5 overflow-y-auto overflow-x-hidden overscroll-y-contain p-3 pb-8 text-sm font-semibold [scrollbar-gutter:stable]">
             @if ($u->role->value === 'admin')
                 <p class="px-3 pb-2 pt-2 text-center text-[11px] font-bold uppercase tracking-wider text-blue-300/75">Administración</p>
                 <a href="{{ route('admin.dashboard') }}" class="block rounded-xl px-3 py-3 transition {{ request()->routeIs('admin.dashboard') ? $navActive : $navInactive }}">Dashboard</a>
@@ -57,5 +63,10 @@
         </nav>
     </aside>
 
-    <div x-show="open" x-transition.opacity class="fixed inset-0 z-40 bg-black/50 lg:hidden" @click="open = false"></div>
+    <div
+        x-show="open"
+        x-transition.opacity
+        class="fixed inset-0 z-40 bg-black/60 backdrop-blur-[2px] lg:hidden"
+        @click="open = false"
+    ></div>
 </div>

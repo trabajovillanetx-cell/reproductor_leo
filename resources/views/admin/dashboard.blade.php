@@ -6,23 +6,40 @@
 @endphp
 
 <x-panel-layout title="Dashboard">
-    <div class="cyber-stack admin-cyber-dashboard space-y-8 text-white">
+    <div class="cyber-stack admin-cyber-dashboard space-y-6 text-white sm:space-y-8">
         {{-- Cabecera estilo consola --}}
-        <div class="flex flex-col gap-4 border-b border-cyan-500/20 pb-6 sm:flex-row sm:items-end sm:justify-between">
-            <div>
+        <div class="flex flex-col gap-4 border-b border-cyan-500/20 pb-6 lg:flex-row lg:items-end lg:justify-between">
+            <div class="min-w-0 text-center lg:text-left">
                 <p class="text-[11px] font-bold uppercase tracking-[0.35em] text-cyan-300/90">Panel / <span class="text-fuchsia-300/95">Dashboard</span></p>
-                <h2 class="mt-2 text-2xl font-black tracking-tight text-white drop-shadow-[0_0_18px_rgba(0,255,255,0.25)] sm:text-3xl">Resumen operativo</h2>
+                <h2 class="mt-2 text-xl font-black tracking-tight text-white drop-shadow-[0_0_18px_rgba(0,255,255,0.25)] sm:text-2xl sm:text-3xl">Resumen operativo</h2>
                 <p class="mt-1 max-w-xl text-sm text-white/55">Biblioteca, clientes y actividad reciente en un solo vistazo.</p>
             </div>
-            <div class="flex flex-wrap gap-2">
-                <a href="{{ route('admin.contents.index') }}" class="rounded-lg border border-cyan-400/40 bg-cyan-500/15 px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-cyan-100 shadow-[0_0_20px_-4px_rgba(34,211,238,0.45)] transition hover:bg-cyan-400/25">Contenido</a>
-                <a href="{{ route('admin.m3u.import') }}" class="rounded-lg border border-fuchsia-400/35 bg-fuchsia-500/10 px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-fuchsia-100 transition hover:bg-fuchsia-500/20">Importar M3U</a>
-                <a href="{{ route('admin.library.raidrive') }}" class="rounded-lg border border-lime-400/30 bg-lime-500/10 px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-lime-100 transition hover:bg-lime-500/20">Biblioteca local</a>
+            <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
+                <a href="{{ route('admin.contents.index') }}" class="rounded-lg border border-cyan-400/40 bg-cyan-500/15 px-3 py-2.5 text-center text-[11px] font-bold uppercase tracking-wide text-cyan-100 shadow-[0_0_20px_-4px_rgba(34,211,238,0.45)] transition hover:bg-cyan-400/25 sm:px-4 sm:text-xs">Contenido</a>
+                <a href="{{ route('admin.m3u.import') }}" class="rounded-lg border border-fuchsia-400/35 bg-fuchsia-500/10 px-3 py-2.5 text-center text-[11px] font-bold uppercase tracking-wide text-fuchsia-100 transition hover:bg-fuchsia-500/20 sm:px-4 sm:text-xs">Importar M3U</a>
+                <a href="{{ route('admin.library.raidrive') }}" class="col-span-2 rounded-lg border border-lime-400/30 bg-lime-500/10 px-3 py-2.5 text-center text-[11px] font-bold uppercase tracking-wide text-lime-100 transition hover:bg-lime-500/20 sm:col-span-1 sm:px-4 sm:text-xs">Biblioteca local</a>
             </div>
         </div>
 
+        {{-- Menú rápido solo móvil / tablet (complementa el hamburguesa del lateral) --}}
+        <details class="admin-dashboard-mobile-menu rounded-2xl border border-cyan-500/20 bg-[#070d1c]/95 shadow-[0_0_24px_-8px_rgba(34,211,238,0.2)] lg:hidden">
+            <summary class="cursor-pointer select-none list-none rounded-2xl px-4 py-3.5 text-center text-sm font-bold text-cyan-100 transition hover:bg-white/[0.06]">
+                Menú rápido del panel
+            </summary>
+            <div class="grid grid-cols-2 gap-2 border-t border-white/10 p-3 sm:grid-cols-3">
+                <a href="{{ route('admin.customers.index') }}" class="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-center text-[11px] font-semibold text-white/90 transition hover:bg-white/10">Clientes</a>
+                <a href="{{ route('admin.categories.index') }}" class="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-center text-[11px] font-semibold text-white/90 transition hover:bg-white/10">Categorías</a>
+                <a href="{{ route('admin.plans.index') }}" class="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-center text-[11px] font-semibold text-white/90 transition hover:bg-white/10">Planes</a>
+                <a href="{{ route('admin.resellers.index') }}" class="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-center text-[11px] font-semibold text-white/90 transition hover:bg-white/10">Revendedores</a>
+                <a href="{{ route('admin.xtream.index') }}" class="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-center text-[11px] font-semibold text-white/90 transition hover:bg-white/10">Xtream</a>
+                <a href="{{ route('admin.diagnostics.channels') }}" class="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-center text-[11px] font-semibold text-white/90 transition hover:bg-white/10">Diagnóstico</a>
+                <a href="{{ route('admin.library.folders.index') }}" class="col-span-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-center text-[11px] font-semibold text-white/90 transition hover:bg-white/10 sm:col-span-1">Carpetas catálogo</a>
+                <a href="{{ route('admin.m3u.manage') }}" class="col-span-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-center text-[11px] font-semibold text-white/90 transition hover:bg-white/10 sm:col-span-2">Gestión M3U</a>
+            </div>
+        </details>
+
         {{-- Fila 1: anillos + % clientes activos + barras mezcla contenido --}}
-        <div class="grid gap-5 lg:grid-cols-12">
+        <div class="grid gap-4 lg:grid-cols-12 lg:gap-5">
             @php
                 $rings = [
                     [
@@ -51,10 +68,11 @@
                     ],
                 ];
             @endphp
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:col-span-6 lg:gap-4">
             @foreach ($rings as $r)
-                <div class="admin-cyber-card flex flex-col items-center justify-center gap-2 p-5 lg:col-span-2">
+                <div class="admin-cyber-card flex flex-col items-center justify-center gap-2 p-4 sm:p-5">
                     <div
-                        class="admin-cyber-donut"
+                        class="admin-cyber-donut admin-cyber-donut--dashboard-sm"
                         style="--p: {{ $r['pct'] }}; --from: {{ $r['from'] }}; --to: {{ $r['to'] }};"
                         role="img"
                         aria-label="{{ $r['label'] }}: {{ number_format($r['value']) }}, indicador {{ $r['pct'] }} por ciento"
@@ -67,8 +85,9 @@
                     <p class="px-1 text-center text-[9px] font-bold uppercase leading-tight tracking-[0.12em] text-cyan-200/50">{{ $r['arc'] }} · <span class="tabular-nums text-fuchsia-200/80">{{ $r['pct'] }}%</span></p>
                 </div>
             @endforeach
+            </div>
 
-            <div class="admin-cyber-card flex flex-col justify-center p-6 lg:col-span-3">
+            <div class="admin-cyber-card flex flex-col justify-center p-5 sm:p-6 lg:col-span-3">
                 <p class="text-[10px] font-bold uppercase tracking-[0.25em] text-fuchsia-300/80">Clientes</p>
                 <p class="mt-2 text-4xl font-black tabular-nums leading-none text-cyan-300" style="text-shadow: 0 0 24px rgba(34, 211, 238, 0.35);">{{ $pctCustomersActive }}%</p>
                 <p class="mt-3 text-xs leading-relaxed text-white/50">Porcentaje de clientes <span class="text-white/75">activos</span> sobre activos + vencidos + suspendidos.</p>
@@ -88,10 +107,10 @@
                 </div>
             </div>
 
-            <div class="admin-cyber-card p-6 lg:col-span-3">
+            <div class="admin-cyber-card p-5 sm:p-6 lg:col-span-3">
                 <p class="text-[10px] font-bold uppercase tracking-[0.25em] text-cyan-300/80">Biblioteca por tipo</p>
                 <p class="mt-1 text-xs text-white/45">Cada métrica usa su unidad: <span class="text-white/60">archivos</span> (VOD), <span class="text-white/60">canales</span> (TV), <span class="text-white/60">episodios</span> (filas de serie). El % es sobre el total de filas en catálogo ({{ number_format($totalContent) }}).</p>
-                <div class="mt-5 space-y-3">
+                <div class="mt-5 space-y-4 sm:space-y-3">
                     @foreach ([
                         ['l' => 'VOD — archivos (local + remotos)', 'n' => $contentVodTotal, 'p' => $pctContentVod, 'u' => 'archivos', 'c' => 'from-cyan-400 to-sky-500', 'g' => 'admin-cyber-bar-fill--cyan', 'extra' => null],
                         ['l' => 'TV en vivo — canales', 'n' => $contentLive, 'p' => $pctContentLive, 'u' => 'canales', 'c' => 'from-lime-400 to-emerald-500', 'g' => 'admin-cyber-bar-fill--lime', 'extra' => null],
@@ -99,9 +118,9 @@
                         ['l' => 'Activos en catálogo — filas', 'n' => $contentActive, 'p' => $pctContentActive, 'u' => 'filas activas', 'c' => 'from-amber-400 to-orange-500', 'g' => 'admin-cyber-bar-fill--amber', 'extra' => null],
                     ] as $bar)
                         <div>
-                            <div class="mb-1 flex justify-between gap-2 text-[11px] font-semibold text-white/70">
+                            <div class="mb-1 flex flex-col gap-1 text-[11px] font-semibold text-white/70 sm:flex-row sm:items-start sm:justify-between sm:gap-2">
                                 <span class="min-w-0 leading-snug">{{ $bar['l'] }}</span>
-                                <span class="shrink-0 text-right tabular-nums">
+                                <span class="shrink-0 tabular-nums sm:text-right">
                                     <span class="text-white/90">{{ number_format($bar['n']) }}</span>
                                     <span class="text-white/50"> {{ $bar['u'] }}</span>
                                     <span class="text-white/35"> / {{ number_format($totalContent) }}</span>
@@ -123,7 +142,7 @@
         {{-- Fila 2: métricas secundarias en tarjetas compactas --}}
         <div>
             <p class="mb-3 text-[10px] font-bold uppercase tracking-[0.28em] text-white/40">Inventario y cuentas</p>
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+            <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-6">
                 @foreach ([
                     [
                         't' => 'Archivos VOD (local)',
@@ -156,9 +175,9 @@
                     ['t' => 'Vendedores', 'v' => $totalVendors, 'unit' => 'cuentas', 'ac' => 'text-violet-300', 'hint' => null],
                     ['t' => 'Carátulas carpeta', 'v' => $folderPosterOverrides, 'unit' => 'registros', 'ac' => 'text-lime-300', 'hint' => null],
                 ] as $cell)
-                    <div class="admin-cyber-card px-4 py-4">
-                        <p class="text-[10px] font-bold uppercase tracking-wider text-white/40">{{ $cell['t'] }}</p>
-                        <p class="mt-1 text-2xl font-black tabular-nums {{ $cell['ac'] }}">{{ number_format($cell['v']) }} <span class="text-base font-bold text-white/35">{{ $cell['unit'] ?? '' }}</span></p>
+                    <div class="admin-cyber-card px-3 py-3 sm:px-4 sm:py-4">
+                        <p class="text-[9px] font-bold uppercase leading-tight tracking-wider text-white/40 sm:text-[10px]">{{ $cell['t'] }}</p>
+                        <p class="mt-1 break-words text-xl font-black tabular-nums sm:text-2xl {{ $cell['ac'] }}">{{ number_format($cell['v']) }} <span class="text-sm font-bold text-white/35 sm:text-base">{{ $cell['unit'] ?? '' }}</span></p>
                         @if (! empty($cell['hint']))
                             <p class="mt-2 text-[10px] leading-snug text-white/35">{{ $cell['hint'] }}</p>
                         @endif
@@ -168,7 +187,7 @@
         </div>
 
         {{-- Fila 3: actividad + calendario + mini timeline de ratios --}}
-        <div class="grid gap-6 lg:grid-cols-12">
+        <div class="grid gap-4 sm:gap-6 lg:grid-cols-12">
             <div class="admin-cyber-card overflow-hidden lg:col-span-5">
                 <div class="border-b border-white/10 bg-gradient-to-r from-fuchsia-900/30 to-transparent px-5 py-3">
                     <h3 class="text-xs font-bold uppercase tracking-[0.2em] text-fuchsia-200/90">Cuentas por vencer</h3>
@@ -224,9 +243,9 @@
                 </div>
             </div>
 
-            <div class="admin-cyber-card flex flex-col justify-between p-5 lg:col-span-3">
+            <div class="admin-cyber-card flex flex-col justify-between p-4 sm:p-5 lg:col-span-3">
                 <h3 class="text-xs font-bold uppercase tracking-[0.2em] text-lime-200/90">Ratios rápidos</h3>
-                <div class="mt-4 flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+                <div class="mt-4 flex flex-wrap items-center justify-center gap-3 sm:justify-between sm:gap-3">
                     @foreach ([['v' => min(100, max(0, (int) $pctContentVod)), 'from' => '#22d3ee', 'to' => '#6366f1'], ['v' => min(100, max(0, (int) $pctCustomersActive)), 'from' => '#e879f9', 'to' => '#a855f7'], ['v' => min(100, max(0, (int) $pctContentActive)), 'from' => '#fbbf24', 'to' => '#f97316'], ['v' => min(100, $totalUsers > 0 ? (int) round(100 * $totalResellers / max(1, $totalUsers)) : 0), 'from' => '#4ade80', 'to' => '#14b8a6'], ['v' => min(100, $totalContent > 0 ? (int) round(100 * $contentInactive / max(1, $totalContent)) : 0), 'from' => '#fb7185', 'to' => '#be123c']] as $mini)
                         <div class="flex flex-col items-center">
                             <div
@@ -251,21 +270,21 @@
             <div class="border-b border-white/10 bg-gradient-to-r from-cyan-900/25 to-transparent px-5 py-3">
                 <h3 class="text-xs font-bold uppercase tracking-[0.2em] text-cyan-200/90">Accesos recientes</h3>
             </div>
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-white/10 text-sm">
-                    <thead class="bg-black/30 text-left text-[10px] font-bold uppercase tracking-wider text-white/45">
+            <div class="overflow-x-auto rounded-b-2xl">
+                <table class="min-w-[520px] w-full divide-y divide-white/10 text-xs sm:min-w-full sm:text-sm">
+                    <thead class="bg-black/30 text-left text-[9px] font-bold uppercase tracking-wider text-white/45 sm:text-[10px]">
                         <tr>
-                            <th class="px-4 py-3">Usuario</th>
-                            <th class="px-4 py-3">Contenido / acción</th>
-                            <th class="px-4 py-3">Fecha</th>
+                            <th class="px-2 py-2.5 sm:px-4 sm:py-3">Usuario</th>
+                            <th class="px-2 py-2.5 sm:px-4 sm:py-3">Contenido / acción</th>
+                            <th class="px-2 py-2.5 sm:px-4 sm:py-3">Fecha</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-white/10">
                         @forelse ($recentAccess as $log)
                             <tr class="transition hover:bg-white/[0.03]">
-                                <td class="px-4 py-2.5 text-white/85">{{ $log->user?->email ?? '—' }}</td>
-                                <td class="px-4 py-2.5 text-white/70">{{ $log->content?->title ?? $log->action }}</td>
-                                <td class="px-4 py-2.5 font-mono text-xs text-white/45">{{ $log->created_at->format('d/m/Y H:i') }}</td>
+                                <td class="max-w-[9rem] truncate px-2 py-2 text-white/85 sm:max-w-none sm:px-4 sm:py-2.5">{{ $log->user?->email ?? '—' }}</td>
+                                <td class="max-w-[10rem] truncate px-2 py-2 text-white/70 sm:max-w-none sm:px-4 sm:py-2.5">{{ $log->content?->title ?? $log->action }}</td>
+                                <td class="whitespace-nowrap px-2 py-2 font-mono text-[10px] text-white/45 sm:px-4 sm:py-2.5 sm:text-xs">{{ $log->created_at->format('d/m/Y H:i') }}</td>
                             </tr>
                         @empty
                             <tr>
