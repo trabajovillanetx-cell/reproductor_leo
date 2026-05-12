@@ -29,12 +29,15 @@ class TmdbPosterService
             return ['ok' => false, 'status' => 0, 'message' => 'TMDB_API_KEY vacía o no definida.'];
         }
 
-        $response = Http::connectTimeout(8)
-            ->timeout(12)
-            ->acceptJson()
-            ->get('https://api.themoviedb.org/3/configuration', [
-                'api_key' => config('services.tmdb.key'),
-            ]);
+        try {
+            $response = $this->tmdbHttp()
+                ->acceptJson()
+                ->get('https://api.themoviedb.org/3/configuration', [
+                    'api_key' => config('services.tmdb.key'),
+                ]);
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            return ['ok' => false, 'status' => 0, 'message' => 'Sin conexión a TMDB (timeout/red). Subí TMDB_CONNECT_TIMEOUT / TMDB_HTTP_TIMEOUT en .env o reintentá. '.$e->getMessage()];
+        }
 
         $status = $response->status();
         if ($response->successful()) {
@@ -149,15 +152,24 @@ class TmdbPosterService
      */
     private function searchBestPosterUrl(string $endpoint, string $query, string $language): ?string
     {
-        $response = Http::connectTimeout(8)
-            ->timeout((int) config('services.tmdb.timeout', 12))
-            ->acceptJson()
-            ->get('https://api.themoviedb.org/3/'.$endpoint, [
-                'api_key' => config('services.tmdb.key'),
-                'query' => $query,
-                'language' => $language,
-                'include_adult' => 'false',
+        try {
+            $response = $this->tmdbHttp()
+                ->acceptJson()
+                ->get('https://api.themoviedb.org/3/'.$endpoint, [
+                    'api_key' => config('services.tmdb.key'),
+                    'query' => $query,
+                    'language' => $language,
+                    'include_adult' => 'false',
+                ]);
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::warning('tmdb.connection_error', [
+                'endpoint' => $endpoint,
+                'query' => Str::limit($query, 80),
+                'message' => $e->getMessage(),
             ]);
+
+            return null;
+        }
 
         if (! $response->successful()) {
             $level = in_array($response->status(), [401, 403], true) ? 'warning' : 'debug';
@@ -202,6 +214,26 @@ class TmdbPosterService
         $base = rtrim((string) config('services.tmdb.image_base', 'https://image.tmdb.org/t/p/w500'), '/');
 
         return $base.$bestPath;
+    }
+
+    /**
+     * Cliente HTTP hacia api.themoviedb.org con timeouts y reintentos (VPS con red lenta / SSL lento).
+     */
+    private function tmdbHttp(): \Illuminate\Http\Client\PendingRequest
+    {
+        $connect = max(5, (int) config('services.tmdb.connect_timeout', 20));
+        $timeout = max(10, (int) config('services.tmdb.timeout', 30));
+        $retries = max(0, min(8, (int) config('services.tmdb.retries', 3)));
+        $delayMs = max(0, min(10_000, (int) config('services.tmdb.retry_delay_ms', 800)));
+
+        $pending = Http::connectTimeout($connect)
+            ->timeout($timeout);
+
+        if ($retries > 0) {
+            $pending = $pending->retry($retries, $delayMs, null, false);
+        }
+
+        return $pending;
     }
 
     /**

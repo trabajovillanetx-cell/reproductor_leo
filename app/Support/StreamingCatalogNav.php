@@ -36,9 +36,13 @@ final class StreamingCatalogNav
     {
         $lib = trim(str_replace('\\', '/', $lib), '/');
 
+        // Sin tope por filas: con orderByDesc + limit(N) solo se veían carpetas presentes en las N filas
+        // más recientes y el resto desaparecía del mosaico aunque hubiera miles de títulos en BD.
         $lfs = (clone $baseQuery)
+            ->reorder()
             ->whereNotNull('library_folder')
-            ->limit(6000)
+            ->where('library_folder', '!=', '')
+            ->distinct()
             ->pluck('library_folder');
 
         if ($lfs->isEmpty()) {

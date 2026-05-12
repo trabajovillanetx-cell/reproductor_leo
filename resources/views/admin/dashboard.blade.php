@@ -38,8 +38,8 @@
             </div>
         </details>
 
-        {{-- Fila 1: anillos + % clientes activos + barras mezcla contenido --}}
-        <div class="grid gap-4 lg:grid-cols-12 lg:gap-5">
+        {{-- Resumen: donuts siempre ancho completo (evita 3 columnas en media fila con sidebar); debajo clientes + biblioteca --}}
+        <div class="flex min-w-0 flex-col gap-4 lg:gap-5">
             @php
                 $rings = [
                     [
@@ -68,9 +68,9 @@
                     ],
                 ];
             @endphp
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:col-span-6 lg:gap-4">
+            <div class="grid min-w-0 grid-cols-1 gap-3 min-[420px]:grid-cols-3 sm:gap-4">
             @foreach ($rings as $r)
-                <div class="admin-cyber-card flex flex-col items-center justify-center gap-2 p-4 sm:p-5">
+                <div class="admin-cyber-card flex min-w-0 flex-col items-center justify-center gap-2 p-4 sm:p-5">
                     <div
                         class="admin-cyber-donut admin-cyber-donut--dashboard-sm"
                         style="--p: {{ $r['pct'] }}; --from: {{ $r['from'] }}; --to: {{ $r['to'] }};"
@@ -82,59 +82,61 @@
                             <span class="admin-cyber-donut-sublabel">{{ $r['label'] }}</span>
                         </div>
                     </div>
-                    <p class="px-1 text-center text-[9px] font-bold uppercase leading-tight tracking-[0.12em] text-cyan-200/50">{{ $r['arc'] }} · <span class="tabular-nums text-fuchsia-200/80">{{ $r['pct'] }}%</span></p>
+                    <p class="max-w-full break-words px-1 text-center text-[9px] font-bold uppercase leading-tight tracking-[0.12em] text-cyan-200/50">{{ $r['arc'] }} · <span class="tabular-nums text-fuchsia-200/80">{{ $r['pct'] }}%</span></p>
                 </div>
             @endforeach
             </div>
 
-            <div class="admin-cyber-card flex flex-col justify-center p-5 sm:p-6 lg:col-span-3">
-                <p class="text-[10px] font-bold uppercase tracking-[0.25em] text-fuchsia-300/80">Clientes</p>
-                <p class="mt-2 text-4xl font-black tabular-nums leading-none text-cyan-300" style="text-shadow: 0 0 24px rgba(34, 211, 238, 0.35);">{{ $pctCustomersActive }}%</p>
-                <p class="mt-3 text-xs leading-relaxed text-white/50">Porcentaje de clientes <span class="text-white/75">activos</span> sobre activos + vencidos + suspendidos.</p>
-                <div class="mt-4 grid grid-cols-3 gap-2 text-center text-[10px]">
-                    <div class="rounded border border-white/10 bg-black/30 py-2">
-                        <span class="block font-bold text-emerald-300">{{ $activeCustomers }}</span>
-                        <span class="text-white/40">Act.</span>
-                    </div>
-                    <div class="rounded border border-white/10 bg-black/30 py-2">
-                        <span class="block font-bold text-amber-300">{{ $expiredCustomers }}</span>
-                        <span class="text-white/40">Venc.</span>
-                    </div>
-                    <div class="rounded border border-white/10 bg-black/30 py-2">
-                        <span class="block font-bold text-rose-300">{{ $suspendedCustomers }}</span>
-                        <span class="text-white/40">Susp.</span>
+            <div class="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-5">
+                <div class="admin-cyber-card flex min-w-0 flex-col justify-center p-5 sm:p-6 lg:col-span-4 xl:col-span-3">
+                    <p class="text-[10px] font-bold uppercase tracking-[0.25em] text-fuchsia-300/80">Clientes</p>
+                    <p class="mt-2 text-4xl font-black tabular-nums leading-none text-cyan-300" style="text-shadow: 0 0 24px rgba(34, 211, 238, 0.35);">{{ $pctCustomersActive }}%</p>
+                    <p class="mt-3 text-xs leading-relaxed text-white/50">Porcentaje de clientes <span class="text-white/75">activos</span> sobre activos + vencidos + suspendidos.</p>
+                    <div class="mt-4 grid grid-cols-3 gap-2 text-center text-[10px]">
+                        <div class="rounded border border-white/10 bg-black/30 py-2">
+                            <span class="block font-bold text-emerald-300">{{ $activeCustomers }}</span>
+                            <span class="text-white/40">Act.</span>
+                        </div>
+                        <div class="rounded border border-white/10 bg-black/30 py-2">
+                            <span class="block font-bold text-amber-300">{{ $expiredCustomers }}</span>
+                            <span class="text-white/40">Venc.</span>
+                        </div>
+                        <div class="rounded border border-white/10 bg-black/30 py-2">
+                            <span class="block font-bold text-rose-300">{{ $suspendedCustomers }}</span>
+                            <span class="text-white/40">Susp.</span>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="admin-cyber-card p-5 sm:p-6 lg:col-span-3">
-                <p class="text-[10px] font-bold uppercase tracking-[0.25em] text-cyan-300/80">Biblioteca por tipo</p>
-                <p class="mt-1 text-xs text-white/45">Cada métrica usa su unidad: <span class="text-white/60">archivos</span> (VOD), <span class="text-white/60">canales</span> (TV), <span class="text-white/60">episodios</span> (filas de serie). El % es sobre el total de filas en catálogo ({{ number_format($totalContent) }}).</p>
-                <div class="mt-5 space-y-4 sm:space-y-3">
-                    @foreach ([
-                        ['l' => 'VOD — archivos (local + remotos)', 'n' => $contentVodTotal, 'p' => $pctContentVod, 'u' => 'archivos', 'c' => 'from-cyan-400 to-sky-500', 'g' => 'admin-cyber-bar-fill--cyan', 'extra' => null],
-                        ['l' => 'TV en vivo — canales', 'n' => $contentLive, 'p' => $pctContentLive, 'u' => 'canales', 'c' => 'from-lime-400 to-emerald-500', 'g' => 'admin-cyber-bar-fill--lime', 'extra' => null],
-                        ['l' => 'Series — episodios (filas)', 'n' => $contentSeries, 'p' => $pctContentSeries, 'u' => 'episodios', 'c' => 'from-fuchsia-500 to-violet-600', 'g' => 'admin-cyber-bar-fill--magenta', 'extra' => $contentSeriesDistinctFolders > 0 ? '≈ '.number_format($contentSeriesDistinctFolders).' series (carpetas distintas con import local)' : null],
-                        ['l' => 'Activos en catálogo — filas', 'n' => $contentActive, 'p' => $pctContentActive, 'u' => 'filas activas', 'c' => 'from-amber-400 to-orange-500', 'g' => 'admin-cyber-bar-fill--amber', 'extra' => null],
-                    ] as $bar)
-                        <div>
-                            <div class="mb-1 flex flex-col gap-1 text-[11px] font-semibold text-white/70 sm:flex-row sm:items-start sm:justify-between sm:gap-2">
-                                <span class="min-w-0 leading-snug">{{ $bar['l'] }}</span>
-                                <span class="shrink-0 tabular-nums sm:text-right">
-                                    <span class="text-white/90">{{ number_format($bar['n']) }}</span>
-                                    <span class="text-white/50"> {{ $bar['u'] }}</span>
-                                    <span class="text-white/35"> / {{ number_format($totalContent) }}</span>
-                                    <span class="ml-1.5 text-cyan-200/90">({{ $bar['p'] }}%)</span>
-                                </span>
+                <div class="admin-cyber-card min-w-0 p-5 sm:p-6 lg:col-span-8 xl:col-span-9">
+                    <p class="text-[10px] font-bold uppercase tracking-[0.25em] text-cyan-300/80">Biblioteca por tipo</p>
+                    <p class="mt-1 text-xs text-white/45">Cada métrica usa su unidad: <span class="text-white/60">archivos</span> (VOD), <span class="text-white/60">canales</span> (TV), <span class="text-white/60">episodios</span> (filas de serie). El % es sobre el total de filas en catálogo ({{ number_format($totalContent) }}).</p>
+                    <div class="mt-5 space-y-4 sm:space-y-3">
+                        @foreach ([
+                            ['l' => 'VOD — archivos (local + remotos)', 'n' => $contentVodTotal, 'p' => $pctContentVod, 'u' => 'archivos', 'c' => 'from-cyan-400 to-sky-500', 'g' => 'admin-cyber-bar-fill--cyan', 'extra' => null],
+                            ['l' => 'TV en vivo — canales', 'n' => $contentLive, 'p' => $pctContentLive, 'u' => 'canales', 'c' => 'from-lime-400 to-emerald-500', 'g' => 'admin-cyber-bar-fill--lime', 'extra' => null],
+                            ['l' => 'Series — episodios (filas)', 'n' => $contentSeries, 'p' => $pctContentSeries, 'u' => 'episodios', 'c' => 'from-fuchsia-500 to-violet-600', 'g' => 'admin-cyber-bar-fill--magenta', 'extra' => $contentSeriesDistinctFolders > 0 ? '≈ '.number_format($contentSeriesDistinctFolders).' series (carpetas distintas con import local)' : null],
+                            ['l' => 'Activos en catálogo — filas', 'n' => $contentActive, 'p' => $pctContentActive, 'u' => 'filas activas', 'c' => 'from-amber-400 to-orange-500', 'g' => 'admin-cyber-bar-fill--amber', 'extra' => null],
+                        ] as $bar)
+                            <div>
+                                <div class="mb-1 flex flex-col gap-1 text-[11px] font-semibold text-white/70 sm:flex-row sm:items-start sm:justify-between sm:gap-2">
+                                    <span class="min-w-0 leading-snug">{{ $bar['l'] }}</span>
+                                    <span class="shrink-0 tabular-nums sm:text-right">
+                                        <span class="text-white/90">{{ number_format($bar['n']) }}</span>
+                                        <span class="text-white/50"> {{ $bar['u'] }}</span>
+                                        <span class="text-white/35"> / {{ number_format($totalContent) }}</span>
+                                        <span class="ml-1.5 text-cyan-200/90">({{ $bar['p'] }}%)</span>
+                                    </span>
+                                </div>
+                                @if (! empty($bar['extra']))
+                                    <p class="mb-1 text-[10px] leading-snug text-fuchsia-200/55">{{ $bar['extra'] }}</p>
+                                @endif
+                                <div class="admin-cyber-bar-track">
+                                    <div class="admin-cyber-bar-fill {{ $bar['g'] }} h-full rounded-full bg-gradient-to-r {{ $bar['c'] }}" style="width: {{ min(100, $bar['p']) }}%"></div>
+                                </div>
                             </div>
-                            @if (! empty($bar['extra']))
-                                <p class="mb-1 text-[10px] leading-snug text-fuchsia-200/55">{{ $bar['extra'] }}</p>
-                            @endif
-                            <div class="admin-cyber-bar-track">
-                                <div class="admin-cyber-bar-fill {{ $bar['g'] }} h-full rounded-full bg-gradient-to-r {{ $bar['c'] }}" style="width: {{ min(100, $bar['p']) }}%"></div>
-                            </div>
-                        </div>
-                    @endforeach
+                        @endforeach
+                    </div>
                 </div>
             </div>
         </div>
