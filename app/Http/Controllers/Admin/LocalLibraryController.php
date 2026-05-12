@@ -8,9 +8,9 @@ use App\Models\Content;
 use App\Services\LocalMediaService;
 use App\Services\RaidriveRenameSyncService;
 use App\Services\TmdbPosterService;
-use Illuminate\Support\Str;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class LocalLibraryController extends Controller
@@ -146,6 +146,7 @@ class LocalLibraryController extends Controller
     public function import(Request $request): RedirectResponse
     {
         $this->authorize('create', Content::class);
+        $this->allowLongRunningImportRequest();
 
         $data = $request->validate([
             'files' => ['required', 'array', 'min:1', 'max:50'],
@@ -217,6 +218,7 @@ class LocalLibraryController extends Controller
     public function importRecursive(Request $request): RedirectResponse
     {
         $this->authorize('create', Content::class);
+        $this->allowLongRunningImportRequest();
 
         $max = max(1, min(10000, (int) config('media.raidrive_import_recursive_max', 2500)));
 
@@ -245,48 +247,80 @@ class LocalLibraryController extends Controller
 
         $category = Category::query()->findOrFail((int) $data['category_id']);
         $items = $this->localMedia->listVideosRecursiveForBrowsePath($browsePath, $max);
-        $created = 0;
         $skipped = 0;
 
         $ctx = $this->localMedia->browseListRootContext($browsePath);
         $streamUrls = array_map(fn (array $r): string => $this->localMedia->streamUrlForPath($r['absolute']), $items);
-        $existingUrls = $streamUrls === [] ? [] : array_flip(Content::query()
-            ->whereIn('stream_url', array_values(array_unique($streamUrls)))
-            ->pluck('stream_url')
-            ->all());
+        $existingUrls = $this->existingLocalStreamUrlLookup($streamUrls);
 
-        foreach ($items as $row) {
-            $abs = $row['absolute'];
-            $allowed = $ctx !== null
-                ? $this->localMedia->isReadableFileUnderTrustedRoot($ctx['rootReal'], $abs)
-                : $this->localMedia->isAllowedReadableFile($abs);
-            if (! $allowed) {
-                $skipped++;
+        $enrichEachRowRecursive = (bool) config('media.raidrive_import_recursive_enrich_tmdb', false)
+            && (bool) config('services.tmdb.auto_on_import', false)
+            && $this->tmdbPosters->isConfigured();
 
-                continue;
+        if ($enrichEachRowRecursive) {
+            $created = 0;
+            foreach ($items as $row) {
+                $abs = $row['absolute'];
+                $allowed = $ctx !== null
+                    ? $this->localMedia->isReadableFileUnderTrustedRoot($ctx['rootReal'], $abs)
+                    : $this->localMedia->isAllowedReadableFile($abs);
+                if (! $allowed) {
+                    $skipped++;
+
+                    continue;
+                }
+
+                $streamUrl = $this->localMedia->streamUrlForPath($abs);
+                if (isset($existingUrls[$streamUrl])) {
+                    $skipped++;
+
+                    continue;
+                }
+
+                $content = Content::query()->create([
+                    'category_id' => $category->id,
+                    'title' => $row['title'],
+                    'description' => null,
+                    'type' => $category->type->value,
+                    'stream_url' => $streamUrl,
+                    'poster_url' => null,
+                    'library_folder' => $row['library_folder'],
+                    'duration' => null,
+                    'is_active' => true,
+                ]);
+                $this->maybeEnrichPosterFromTmdb($content, true);
+                $existingUrls[$streamUrl] = true;
+                $created++;
+            }
+        } else {
+            $pending = [];
+            foreach ($items as $row) {
+                $abs = $row['absolute'];
+                $allowed = $ctx !== null
+                    ? $this->localMedia->isReadableFileUnderTrustedRoot($ctx['rootReal'], $abs)
+                    : $this->localMedia->isAllowedReadableFile($abs);
+                if (! $allowed) {
+                    $skipped++;
+
+                    continue;
+                }
+
+                $streamUrl = $this->localMedia->streamUrlForPath($abs);
+                if (isset($existingUrls[$streamUrl])) {
+                    $skipped++;
+
+                    continue;
+                }
+
+                $pending[] = [
+                    'title' => $row['title'],
+                    'stream_url' => $streamUrl,
+                    'library_folder' => $row['library_folder'],
+                ];
+                $existingUrls[$streamUrl] = true;
             }
 
-            $streamUrl = $this->localMedia->streamUrlForPath($abs);
-            if (isset($existingUrls[$streamUrl])) {
-                $skipped++;
-
-                continue;
-            }
-
-            $content = Content::query()->create([
-                'category_id' => $category->id,
-                'title' => $row['title'],
-                'description' => null,
-                'type' => $category->type->value,
-                'stream_url' => $streamUrl,
-                'poster_url' => null,
-                'library_folder' => $row['library_folder'],
-                'duration' => null,
-                'is_active' => true,
-            ]);
-            $this->maybeEnrichPosterFromTmdb($content, true);
-            $existingUrls[$streamUrl] = true;
-            $created++;
+            $created = $this->insertImportedLibraryRowsBatch($category, $pending);
         }
 
         $this->localMedia->bumpRaidriveCacheEpoch();
@@ -299,6 +333,7 @@ class LocalLibraryController extends Controller
     public function importRecursiveFolders(Request $request): RedirectResponse
     {
         $this->authorize('create', Content::class);
+        $this->allowLongRunningImportRequest();
 
         $maxGlobal = max(1, min(10000, (int) config('media.raidrive_import_recursive_max', 2500)));
 
@@ -312,9 +347,15 @@ class LocalLibraryController extends Controller
         $category = Category::query()->findOrFail((int) $data['category_id']);
         $paths = array_values(array_unique($data['folder_paths']));
 
-        $created = 0;
         $skipped = 0;
         $remaining = $maxGlobal;
+
+        $enrichEachRowRecursive = (bool) config('media.raidrive_import_recursive_enrich_tmdb', false)
+            && (bool) config('services.tmdb.auto_on_import', false)
+            && $this->tmdbPosters->isConfigured();
+
+        $pending = [];
+        $created = 0;
 
         foreach ($paths as $browsePath) {
             if ($remaining <= 0) {
@@ -334,10 +375,10 @@ class LocalLibraryController extends Controller
 
             $ctx = $this->localMedia->browseListRootContext($browsePath);
             $streamUrls = array_map(fn (array $r): string => $this->localMedia->streamUrlForPath($r['absolute']), $items);
-            $existingUrls = $streamUrls === [] ? [] : array_flip(Content::query()
-                ->whereIn('stream_url', array_values(array_unique($streamUrls)))
-                ->pluck('stream_url')
-                ->all());
+            $existingUrls = $this->existingLocalStreamUrlLookup($streamUrls);
+            foreach ($pending as $p) {
+                $existingUrls[$p['stream_url']] = true;
+            }
 
             foreach ($items as $row) {
                 if ($remaining <= 0) {
@@ -362,22 +403,36 @@ class LocalLibraryController extends Controller
                     continue;
                 }
 
-                $content = Content::query()->create([
-                    'category_id' => $category->id,
-                    'title' => $row['title'],
-                    'description' => null,
-                    'type' => $category->type->value,
-                    'stream_url' => $streamUrl,
-                    'poster_url' => null,
-                    'library_folder' => $row['library_folder'],
-                    'duration' => null,
-                    'is_active' => true,
-                ]);
-                $this->maybeEnrichPosterFromTmdb($content, true);
-                $existingUrls[$streamUrl] = true;
-                $created++;
-                $remaining--;
+                if ($enrichEachRowRecursive) {
+                    $content = Content::query()->create([
+                        'category_id' => $category->id,
+                        'title' => $row['title'],
+                        'description' => null,
+                        'type' => $category->type->value,
+                        'stream_url' => $streamUrl,
+                        'poster_url' => null,
+                        'library_folder' => $row['library_folder'],
+                        'duration' => null,
+                        'is_active' => true,
+                    ]);
+                    $this->maybeEnrichPosterFromTmdb($content, true);
+                    $existingUrls[$streamUrl] = true;
+                    $created++;
+                    $remaining--;
+                } else {
+                    $pending[] = [
+                        'title' => $row['title'],
+                        'stream_url' => $streamUrl,
+                        'library_folder' => $row['library_folder'],
+                    ];
+                    $existingUrls[$streamUrl] = true;
+                    $remaining--;
+                }
             }
+        }
+
+        if (! $enrichEachRowRecursive && $pending !== []) {
+            $created = $this->insertImportedLibraryRowsBatch($category, $pending);
         }
 
         $this->localMedia->bumpRaidriveCacheEpoch();
@@ -390,6 +445,15 @@ class LocalLibraryController extends Controller
         return redirect()
             ->route('admin.library.raidrive', $back === '' ? [] : ['path' => $back])
             ->with('success', "Importación por carpetas marcadas: {$created} nuevo(s). Omitidos: {$skipped}. Tope total en esta pasada: {$maxGlobal}.");
+    }
+
+    /**
+     * Importaciones recursivas pueden tardar minutos (disco de red + BD). Sin esto, PHP suele cortar a los 30–120 s.
+     */
+    private function allowLongRunningImportRequest(): void
+    {
+        @set_time_limit(0);
+        @ini_set('max_execution_time', '0');
     }
 
     private function maybeEnrichPosterFromTmdb(Content $content, bool $duringRecursiveBulkImport = false): void
@@ -406,6 +470,72 @@ class LocalLibraryController extends Controller
         if ($this->tmdbPosters->enrichContentPoster($content)) {
             usleep((int) config('services.tmdb.delay_ms_between_requests', 200) * 1000);
         }
+    }
+
+    /**
+     * @param  list<string>  $streamUrls
+     * @return array<string, true>
+     */
+    private function existingLocalStreamUrlLookup(array $streamUrls): array
+    {
+        $urls = array_values(array_unique(array_filter($streamUrls, static fn (string $u): bool => $u !== '')));
+        if ($urls === []) {
+            return [];
+        }
+
+        $found = [];
+        foreach (array_chunk($urls, 450) as $chunk) {
+            foreach (Content::query()->whereIn('stream_url', $chunk)->pluck('stream_url') as $u) {
+                $found[(string) $u] = true;
+            }
+        }
+
+        return $found;
+    }
+
+    /**
+     * Inserción masiva (mucho más rápido que miles de {@see Content::create()}).
+     *
+     * @param  list<array{title: string, stream_url: string, library_folder: ?string}>  $rows
+     */
+    private function insertImportedLibraryRowsBatch(Category $category, array $rows): int
+    {
+        if ($rows === []) {
+            return 0;
+        }
+
+        $now = now();
+        $catId = $category->id;
+        $typeVal = $category->type->value;
+        $table = (new Content)->getTable();
+        $inserted = 0;
+
+        foreach (array_chunk($rows, 200) as $chunk) {
+            $payload = [];
+            foreach ($chunk as $r) {
+                $payload[] = [
+                    'category_id' => $catId,
+                    'xtream_source_id' => null,
+                    'stream_id' => null,
+                    'source_type' => null,
+                    'title' => $r['title'],
+                    'description' => null,
+                    'type' => $typeVal,
+                    'stream_url' => $r['stream_url'],
+                    'poster_url' => null,
+                    'library_folder' => $r['library_folder'] ?? null,
+                    'duration' => null,
+                    'is_active' => true,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+
+            DB::table($table)->insert($payload);
+            $inserted += count($payload);
+        }
+
+        return $inserted;
     }
 
     private function parentRelativePath(string $path): ?string

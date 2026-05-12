@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\App;
 
+use App\Enums\ContentType;
 use App\Http\Controllers\Controller;
 use App\Models\AccessLog;
 use App\Models\Category;
 use App\Models\Content;
 use App\Models\LibraryFolderPoster;
+use App\Services\StreamMimeResolver;
 use App\Support\StreamingCatalogNav;
 use App\Support\StreamingLabel;
 use App\Support\TmdbImageUrl;
@@ -237,11 +239,12 @@ class HomeController extends Controller
         $manualPosters = LibraryFolderPoster::query()->pluck('poster_url', 'folder_path')->all();
 
         $candidates = (clone $base)
+            ->setEagerLoads([])
             ->whereNotNull('library_folder')
             ->whereNotNull('poster_url')
             ->where('poster_url', '!=', '')
             ->orderByDesc('id')
-            ->limit(4000)
+            ->limit(25_000)
             ->get(['library_folder', 'poster_url']);
 
         return array_map(function (array $row) use ($candidates, $manualPosters): array {
@@ -312,7 +315,7 @@ class HomeController extends Controller
             ->sortBy(fn (Content $c) => array_search($c->id, $pick, true))
             ->values();
 
-        $mimeResolver = app(\App\Services\StreamMimeResolver::class);
+        $mimeResolver = app(StreamMimeResolver::class);
 
         return $contents->map(function (Content $c) use ($mimeResolver): array {
             $desc = Str::limit(strip_tags((string) ($c->description ?? '')), 260);
@@ -325,9 +328,9 @@ class HomeController extends Controller
                 'contentId' => $c->id,
                 'preview' => $mimeResolver->supportsHeroPreview($c),
                 'typeLabel' => match ($c->type) {
-                    \App\Enums\ContentType::Vod => 'Película',
-                    \App\Enums\ContentType::Series => 'Serie',
-                    \App\Enums\ContentType::Live => 'TV en vivo',
+                    ContentType::Vod => 'Película',
+                    ContentType::Series => 'Serie',
+                    ContentType::Live => 'TV en vivo',
                 },
             ];
         })->all();

@@ -6,6 +6,46 @@
 @endphp
 
 @push('body')
+    @if (session('screen_limit_popup'))
+        <div
+            id="screen-limit-overlay"
+            class="fixed inset-0 z-[400] flex items-center justify-center bg-black/80 p-5 backdrop-blur-sm"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="screen-limit-title"
+            aria-describedby="screen-limit-desc"
+        >
+            <div class="w-full max-w-md rounded-2xl border-2 border-red-500 bg-gradient-to-b from-red-950 to-[#1a0505] px-6 py-8 text-center shadow-[0_0_48px_rgba(239,68,68,0.35)] ring-1 ring-red-400/40">
+                <p class="text-xs font-bold uppercase tracking-[0.35em] text-red-300/90">Límite de sesiones</p>
+                <h2 id="screen-limit-title" class="mt-4 text-xl font-black leading-snug text-red-100 sm:text-2xl">
+                    Excediste el límite de pantallas
+                </h2>
+                <p id="screen-limit-desc" class="mt-4 text-sm leading-relaxed text-red-200/90">
+                    {{ session('screen_limit_popup') }}
+                </p>
+                <button
+                    type="button"
+                    id="screen-limit-dismiss"
+                    class="mt-8 w-full rounded-xl border border-red-400/50 bg-red-600/90 px-4 py-3 text-sm font-bold uppercase tracking-wider text-white shadow-lg transition hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-400"
+                >
+                    Entendido
+                </button>
+            </div>
+        </div>
+        <script>
+            (function () {
+                var overlay = document.getElementById('screen-limit-overlay');
+                var btn = document.getElementById('screen-limit-dismiss');
+                if (!overlay) return;
+                document.body.style.overflow = 'hidden';
+                btn?.addEventListener('click', function () {
+                    overlay.remove();
+                    document.body.style.overflow = '';
+                });
+            })();
+        </script>
+    @endif
+
     <div
         id="login-fingerprint-overlay"
         class="fixed inset-0 z-[300] hidden flex-col items-center justify-center bg-slate-950/70 p-6 backdrop-blur-md"

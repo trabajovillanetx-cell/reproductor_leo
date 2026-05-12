@@ -1,5 +1,8 @@
 <?php
 
+use App\Models\CustomerProfile;
+use App\Services\RemoteHlsBrowserProxy;
+
 return [
     /** Reescribe HLS remoto por Laravel (misma origen que el reproductor): evita errores VHS por CORS/mixed-content. */
     'hls_browser_proxy_enabled' => filter_var(env('HLS_BROWSER_PROXY_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
@@ -8,7 +11,7 @@ return [
      * Por defecto se permiten playlists/segmentos en otros dominios públicos respecto del stream principal (CDN, keys AES).
      * true = mismo esquema+host+puesto que stream_url únicamente (más cerrado).
      *
-     * @see \App\Services\RemoteHlsBrowserProxy Relay sigue obligando HTTPS/HTTP público y bloqueando redes privadas (SSRF básico).
+     * @see RemoteHlsBrowserProxy Relay sigue obligando HTTPS/HTTP público y bloqueando redes privadas (SSRF básico).
      */
     'hls_proxy_same_origin_only' => filter_var(env('HLS_PROXY_SAME_ORIGIN_ONLY', false), FILTER_VALIDATE_BOOLEAN),
 
@@ -72,4 +75,16 @@ return [
         env('SUBSCRIPTION_EXPIRE_AFTER_END_OF_DAY', true),
         FILTER_VALIDATE_BOOLEAN
     ),
+
+    /**
+     * Clientes (rol customer): máximo de sesiones web activas a la vez (driver session = database).
+     * Por defecto coincide con los espacios de streaming por cuenta; configurable vía .env.
+     */
+    'max_concurrent_customer_sessions' => max(1, min(50, (int) env('STREAMING_MAX_CONCURRENT_SESSIONS', CustomerProfile::PER_ACCOUNT_LIMIT))),
+
+    /** Minutos sin actividad (last_activity) para que una fila en `sessions` deje de contar como conexión activa. */
+    'concurrent_session_activity_minutes' => max(5, (int) env('STREAMING_CONCURRENT_SESSION_ACTIVITY_MINUTES', 30)),
+
+    /** Comando sessions:prune: borra filas con last_activity más antiguo que este umbral (minutos). */
+    'prune_sessions_idle_minutes' => max(30, (int) env('STREAMING_PRUNE_SESSIONS_IDLE_MINUTES', 120)),
 ];

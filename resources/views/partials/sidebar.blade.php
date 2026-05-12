@@ -38,6 +38,7 @@
                 <a href="{{ route('admin.m3u.manage') }}" class="block rounded-xl px-3 py-3 transition {{ request()->routeIs('admin.m3u.manage') ? $navActive : $navInactive }}">Gestión listas M3U (borrar)</a>
                 <a href="{{ route('admin.xtream.index') }}" class="block rounded-xl px-3 py-3 transition {{ request()->routeIs('admin.xtream.*') ? $navActive : $navInactive }}">Xtream Codes (API)</a>
                 <a href="{{ route('admin.diagnostics.channels') }}" class="block rounded-xl px-3 py-3 transition {{ request()->routeIs('admin.diagnostics.channels*') ? $navActive : $navInactive }}">Diagnóstico streams</a>
+                <a href="{{ route('admin.active-sessions.index') }}" class="block rounded-xl px-3 py-3 transition {{ request()->routeIs('admin.active-sessions.*') ? $navActive : $navInactive }}">Sesiones activas</a>
                 <a href="{{ route('admin.library.raidrive') }}" class="block rounded-xl px-3 py-3 transition {{ request()->routeIs('admin.library.raidrive') ? $navActive : $navInactive }}">Biblioteca local</a>
                 <a href="{{ route('admin.library.folders.index') }}" class="block rounded-xl px-3 py-3 transition {{ request()->routeIs('admin.library.folders.*') ? $navActive : $navInactive }}">Carpetas del catálogo</a>
                 <a href="{{ route('admin.library.folder-posters.index') }}" class="block rounded-xl px-3 py-3 transition {{ request()->routeIs('admin.library.folder-posters.*') ? $navActive : $navInactive }}">Carátulas de carpetas</a>

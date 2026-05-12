@@ -33,33 +33,15 @@ class ContentController extends Controller
         $this->authorize('viewAny', Content::class);
 
         $q = Content::query()->with('category');
-
-        if ($request->filled('search')) {
-            $raw = trim((string) $request->string('search'));
-            if ($raw !== '') {
-                $like = '%'.$raw.'%';
-                $q->where(function (Builder $sub) use ($like): void {
-                    $sub->where('title', 'like', $like)
-                        ->orWhere('stream_url', 'like', $like)
-                        ->orWhere('poster_url', 'like', $like)
-                        ->orWhere('library_folder', 'like', $like)
-                        ->orWhere('description', 'like', $like)
-                        ->orWhereHas('category', function (Builder $cq) use ($like): void {
-                            $cq->where('name', 'like', $like);
-                        });
-                });
-            }
-        }
-
-        $typeFilter = $this->catalogTypeFromRequest($request);
-        if ($typeFilter !== null) {
-            $this->applyAdminCatalogTypeFilter($q, $typeFilter);
-        }
+        $this->applyAdminContentsIndexFilters($request, $q);
 
         $vodFolders = $this->vodClientVisibleFolderRemovalRows();
 
+        $filteredTotal = (clone $q)->count();
+
         return view('admin.contents.index', [
             'contents' => $q->orderByDesc('id')->paginate(20)->withQueryString(),
+            'filteredTotal' => $filteredTotal,
             'stats' => [
                 'total' => Content::query()->count(),
                 'vod' => $this->countContentsMatchingCatalogType(ContentType::Vod),
@@ -147,6 +129,58 @@ class ContentController extends Controller
     public function bulkDestroy(Request $request): RedirectResponse
     {
         $this->authorize('viewAny', Content::class);
+
+        if ($request->boolean('select_all_query')) {
+            $filters = $request->validate([
+                'search' => ['nullable', 'string', 'max:500'],
+                'type' => ['nullable', 'string', Rule::in(['vod', 'live', 'series'])],
+                'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+                'is_active' => ['nullable', 'in:0,1'],
+            ]);
+
+            $queryParams = array_filter([
+                'search' => isset($filters['search']) ? trim((string) $filters['search']) : null,
+                'type' => isset($filters['type']) ? trim((string) $filters['type']) : null,
+                'category_id' => $filters['category_id'] ?? null,
+                'is_active' => array_key_exists('is_active', $filters) && $filters['is_active'] !== null && $filters['is_active'] !== ''
+                    ? (string) $filters['is_active']
+                    : null,
+            ], static fn ($v) => $v !== null && $v !== '');
+
+            $filterRequest = Request::create('/', 'GET', $queryParams);
+
+            $q = Content::query();
+            $this->applyAdminContentsIndexFilters($filterRequest, $q);
+
+            $deleted = 0;
+
+            while (true) {
+                $batch = (clone $q)->orderBy('id')->limit(500)->get();
+                if ($batch->isEmpty()) {
+                    break;
+                }
+
+                DB::transaction(function () use ($batch, &$deleted): void {
+                    foreach ($batch as $content) {
+                        $this->authorize('delete', $content);
+                        $this->deleteManagedContentPosterFile(trim((string) ($content->poster_url ?? '')));
+                        $content->delete();
+                        $deleted++;
+                    }
+                });
+            }
+
+            if ($deleted === 0) {
+                return redirect()
+                    ->back()
+                    ->with('warning', 'No se eliminó ningún contenido (sin permiso o ningún resultado con el filtro actual).');
+            }
+
+            return redirect()->back()->with(
+                'success',
+                $deleted === 1 ? 'Se eliminó 1 contenido.' : 'Se eliminaron '.$deleted.' contenidos.'
+            );
+        }
 
         $data = $request->validate([
             'ids' => ['required', 'array', 'min:1'],
@@ -346,6 +380,42 @@ class ContentController extends Controller
         }
 
         return $out->unique()->sort()->values();
+    }
+
+    /**
+     * Mismos filtros que el listado del índice (búsqueda, tipo, categoría, activo).
+     */
+    private function applyAdminContentsIndexFilters(Request $request, Builder $q): void
+    {
+        if ($request->filled('search')) {
+            $raw = trim((string) $request->string('search'));
+            if ($raw !== '') {
+                $like = '%'.$raw.'%';
+                $q->where(function (Builder $sub) use ($like): void {
+                    $sub->where('title', 'like', $like)
+                        ->orWhere('stream_url', 'like', $like)
+                        ->orWhere('poster_url', 'like', $like)
+                        ->orWhere('library_folder', 'like', $like)
+                        ->orWhere('description', 'like', $like)
+                        ->orWhereHas('category', function (Builder $cq) use ($like): void {
+                            $cq->where('name', 'like', $like);
+                        });
+                });
+            }
+        }
+
+        $typeFilter = $this->catalogTypeFromRequest($request);
+        if ($typeFilter !== null) {
+            $this->applyAdminCatalogTypeFilter($q, $typeFilter);
+        }
+
+        if ($request->filled('category_id')) {
+            $q->where('category_id', (int) $request->input('category_id'));
+        }
+
+        if ($request->has('is_active') && $request->string('is_active')->toString() !== '') {
+            $q->where('is_active', $request->boolean('is_active'));
+        }
     }
 
     /**

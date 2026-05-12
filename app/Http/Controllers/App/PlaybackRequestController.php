@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\App;
 
+use App\Enums\ContentType;
 use App\Http\Controllers\Controller;
 use App\Models\AccessLog;
 use App\Models\Content;
@@ -24,10 +25,17 @@ class PlaybackRequestController extends Controller
         $profileId = is_numeric($profileId) ? (int) $profileId : null;
 
         // Los canales en vivo necesitan token largo: los segmentos TS se siguen pidiendo horas.
-        $ttlOverride = $content->type === \App\Enums\ContentType::Live
+        $ttlOverride = $content->type === ContentType::Live
             ? (int) config('streaming.playback_token_ttl_live_minutes', 480)
             : null;
         $token = $this->tokens->create($user, $content, $profileId, $ttlOverride);
+
+        $token->forceFill([
+            'ip_address' => $request->ip(),
+            'user_agent' => substr($request->userAgent() ?? '', 0, 512),
+            'last_seen_at' => now(),
+            'playback_status' => 'playing',
+        ])->save();
 
         AccessLog::query()->create([
             'user_id' => $user->id,

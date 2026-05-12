@@ -163,6 +163,36 @@
                 document.getElementById('err').classList.add('hidden');
             });
         }
+
+        const heartbeatUrl = @json(route('player.heartbeat', ['content' => $content->id, 'token' => $token]));
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+
+        function sendHeartbeat(status) {
+            fetch(heartbeatUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    Accept: 'application/json',
+                },
+                body: JSON.stringify({ status: status }),
+                keepalive: true,
+            }).catch(function () {});
+        }
+
+        const heartbeatInterval = setInterval(function () {
+            const status = player.paused() ? 'paused' : (player.seeking() ? 'buffering' : 'playing');
+            sendHeartbeat(status);
+        }, 15000);
+
+        window.addEventListener('beforeunload', function () {
+            clearInterval(heartbeatInterval);
+            sendHeartbeat('ended');
+        });
+
+        player.on('pause', function () { sendHeartbeat('paused'); });
+        player.on('play', function () { sendHeartbeat('playing'); });
+        player.on('waiting', function () { sendHeartbeat('buffering'); });
     </script>
 </body>
 </html>

@@ -40,6 +40,12 @@
             @if ($catalogType !== null)
                 <input type="hidden" name="type" value="{{ $catalogType }}">
             @endif
+            @if (request()->filled('category_id'))
+                <input type="hidden" name="category_id" value="{{ request('category_id') }}">
+            @endif
+            @if (request()->has('is_active') && request()->string('is_active')->toString() !== '')
+                <input type="hidden" name="is_active" value="{{ request('is_active') }}">
+            @endif
             <div class="min-w-0 flex-1 sm:max-w-2xl">
                 <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-cyan-200/90" for="admin-contents-search">Texto a buscar</label>
                 <input
@@ -125,12 +131,32 @@
             method="POST"
             action="{{ route('admin.contents.bulk_destroy') }}"
             class="inline-flex flex-wrap items-center gap-2"
-            onsubmit="return confirm('¿Eliminar DEFINITIVAMENTE los contenidos marcados? No se puede deshacer.');"
         >
             @csrf
+            <input type="hidden" name="search" value="{{ $searchQ ?? '' }}">
+            @if ($catalogType !== null)
+                <input type="hidden" name="type" value="{{ $catalogType }}">
+            @else
+                <input type="hidden" name="type" value="">
+            @endif
+            @if (request()->filled('category_id'))
+                <input type="hidden" name="category_id" value="{{ request('category_id') }}">
+            @endif
+            @if (request()->has('is_active') && request()->string('is_active')->toString() !== '')
+                <input type="hidden" name="is_active" value="{{ request('is_active') }}">
+            @endif
+            <input type="hidden" name="select_all_query" value="0" id="select-all-query-flag">
             <button type="submit" class="admin-btn-secondary border border-red-500/50 bg-red-950/30 text-red-100 hover:bg-red-900/45 dark:text-red-200">
                 Eliminar seleccionados
             </button>
+            @if (($filteredTotal ?? 0) > 0)
+                <button
+                    type="button"
+                    class="js-select-all-query shrink-0 text-left text-xs font-semibold text-amber-200 underline decoration-amber-400/60 underline-offset-2 hover:text-white sm:text-sm"
+                >
+                    Seleccionar los {{ number_format($filteredTotal) }} del filtro (todas las páginas)
+                </button>
+            @endif
         </form>
 
         <form method="POST" action="{{ route('admin.contents.enrich-posters') }}" class="inline" onsubmit="return confirm('Se consultará TMDB para hasta 30 ítems (VOD, series o canales en vivo) sin carátula; los nombres muy genéricos pueden no coincidir. ¿Continuar?');">
@@ -140,7 +166,14 @@
         </form>
     </div>
 
-    <p class="mb-6 text-xs leading-relaxed text-amber-100/90">Marcá la casilla y usá <strong class="text-white">Eliminar seleccionados</strong> para borrar filas de <strong class="text-white">esta página</strong> (paginación). Para vaciar todas las URLs remotas: <a href="{{ route('admin.m3u.manage') }}" class="font-semibold underline decoration-amber-400/60 hover:text-white">Gestión listas M3U</a>.</p>
+    <p class="mb-3 text-xs leading-relaxed text-amber-100/90">Marcá la casilla y usá <strong class="text-white">Eliminar seleccionados</strong> para borrar filas de <strong class="text-white">esta página</strong> (paginación). Podés <strong class="text-white">seleccionar todos los resultados del filtro actual</strong> (todas las páginas) con el enlace bajo la tabla. Para vaciar todas las URLs remotas: <a href="{{ route('admin.m3u.manage') }}" class="font-semibold underline decoration-amber-400/60 hover:text-white">Gestión listas M3U</a>.</p>
+
+    <div id="select-all-banner" class="mb-6 hidden rounded-xl border border-amber-400/50 bg-amber-950/50 px-4 py-3 text-sm text-amber-50 shadow-inner ring-1 ring-amber-400/25">
+        <p class="font-semibold text-amber-100">Se seleccionaron <strong class="text-white">TODOS</strong> los <span id="select-all-banner-count" class="tabular-nums text-white">{{ number_format($filteredTotal) }}</span> resultados que coinciden con el filtro actual (búsqueda, tipo Películas/Series/TV, categoría y activo si los usás en la URL).</p>
+        <button type="button" id="btn-cancel-select-all-query" class="mt-2 text-xs font-bold uppercase tracking-wide text-amber-200 underline decoration-amber-400/70 hover:text-white">
+            Cancelar selección global
+        </button>
+    </div>
 
     <div class="mb-6 w-full rounded-xl border border-red-500/45 bg-red-950/35 px-4 py-4 text-red-50 shadow-inner ring-1 ring-red-400/20">
 
@@ -322,22 +355,108 @@
 
         </div>
 
-        <div class="border-t border-slate-200 bg-slate-50/80 px-5 py-3">{{ $contents->links() }}</div>
+        <div class="border-t border-slate-200 bg-slate-50/80 px-5 py-3">
+            <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                {{ $contents->links() }}
+                @if (($filteredTotal ?? 0) > 0)
+                    <button
+                        type="button"
+                        class="js-select-all-query shrink-0 text-left text-sm font-semibold text-indigo-700 underline decoration-indigo-400/60 underline-offset-2 hover:text-indigo-900 dark:text-sky-200 dark:hover:text-white"
+                    >
+                        Seleccionar los {{ number_format($filteredTotal) }} resultados (todas las páginas)
+                    </button>
+                @endif
+            </div>
+        </div>
 
     </div>
 
     <script>
-        document.getElementById('select-all-contents')?.addEventListener('change', function () {
-            document.querySelectorAll('.content-row-check').forEach(function (cb) {
-                cb.checked = this.checked;
-            }, this);
-        });
-        document.getElementById('bulk-delete-contents')?.addEventListener('submit', function (e) {
-            if (!document.querySelectorAll('.content-row-check:checked').length) {
-                e.preventDefault();
-                alert('Marcá al menos un contenido para eliminar.');
+        (function () {
+            var selectAllQuery = false;
+            var filteredTotal = {{ (int) ($filteredTotal ?? 0) }};
+            var pageCheckAll = document.getElementById('select-all-contents');
+            var flagEl = document.getElementById('select-all-query-flag');
+            var banner = document.getElementById('select-all-banner');
+            var btnSelectAllQuery = document.querySelectorAll('.js-select-all-query');
+            var btnCancelSelectAllQuery = document.getElementById('btn-cancel-select-all-query');
+            var bulkForm = document.getElementById('bulk-delete-contents');
+
+            function setRowChecksDisabled(disabled) {
+                document.querySelectorAll('.content-row-check').forEach(function (cb) {
+                    cb.disabled = disabled;
+                });
+                if (pageCheckAll) {
+                    pageCheckAll.disabled = disabled;
+                }
             }
-        });
+
+            function bindSelectAllQuery(btn) {
+                btn.addEventListener('click', function () {
+                    selectAllQuery = true;
+                    if (flagEl) {
+                        flagEl.value = '1';
+                    }
+                    banner?.classList.remove('hidden');
+                    btnSelectAllQuery.forEach(function (b) {
+                        b.classList.add('hidden');
+                    });
+                    document.querySelectorAll('.content-row-check').forEach(function (cb) {
+                        cb.checked = true;
+                    });
+                    if (pageCheckAll) {
+                        pageCheckAll.checked = true;
+                    }
+                    setRowChecksDisabled(true);
+                });
+            }
+
+            pageCheckAll?.addEventListener('change', function () {
+                if (selectAllQuery) {
+                    return;
+                }
+                document.querySelectorAll('.content-row-check').forEach(function (cb) {
+                    if (!cb.disabled) {
+                        cb.checked = pageCheckAll.checked;
+                    }
+                });
+            });
+
+            btnSelectAllQuery.forEach(bindSelectAllQuery);
+
+            btnCancelSelectAllQuery?.addEventListener('click', function () {
+                selectAllQuery = false;
+                if (flagEl) {
+                    flagEl.value = '0';
+                }
+                banner?.classList.add('hidden');
+                btnSelectAllQuery.forEach(function (b) {
+                    b.classList.remove('hidden');
+                });
+                setRowChecksDisabled(false);
+                document.querySelectorAll('.content-row-check').forEach(function (cb) {
+                    cb.checked = false;
+                });
+                if (pageCheckAll) {
+                    pageCheckAll.checked = false;
+                }
+            });
+
+            bulkForm?.addEventListener('submit', function (e) {
+                var count = selectAllQuery ? filteredTotal : document.querySelectorAll('.content-row-check:checked').length;
+                if (count === 0) {
+                    e.preventDefault();
+                    alert('Marcá al menos un contenido o usá «Seleccionar los N resultados».');
+                    return;
+                }
+                var msg = selectAllQuery
+                    ? '¿Eliminar DEFINITIVAMENTE los ' + count + ' contenido(s) que coinciden con el filtro actual (todas las páginas)? No se puede deshacer.'
+                    : '¿Eliminar DEFINITIVAMENTE los contenidos marcados? No se puede deshacer.';
+                if (!window.confirm(msg)) {
+                    e.preventDefault();
+                }
+            });
+        })();
 
         (function () {
             var filter = document.getElementById('folder-delete-filter');

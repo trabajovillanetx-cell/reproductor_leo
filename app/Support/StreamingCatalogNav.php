@@ -36,23 +36,21 @@ final class StreamingCatalogNav
     {
         $lib = trim(str_replace('\\', '/', $lib), '/');
 
-        // Sin tope por filas: con orderByDesc + limit(N) solo se veían carpetas presentes en las N filas
-        // más recientes y el resto desaparecía del mosaico aunque hubiera miles de títulos en BD.
-        $lfs = (clone $baseQuery)
-            ->reorder()
-            ->whereNotNull('library_folder')
-            ->where('library_folder', '!=', '')
-            ->distinct()
-            ->pluck('library_folder');
-
-        if ($lfs->isEmpty()) {
-            return [];
-        }
-
         $map = [];
 
-        foreach ($lfs as $lf) {
-            $lf = trim(str_replace('\\', '/', (string) $lf), '/');
+        $q = clone $baseQuery;
+        $q->setEagerLoads([]);
+        $q->reorder('id');
+        $q->whereNotNull('library_folder');
+        $q->where('library_folder', '!=', '');
+
+        if ($lib !== '') {
+            $likePrefix = str_replace(['%', '_'], ['\%', '\_'], $lib).'/';
+            $q->where('library_folder', 'like', $likePrefix.'%');
+        }
+
+        foreach ($q->cursor() as $row) {
+            $lf = trim(str_replace('\\', '/', (string) $row->library_folder), '/');
             if ($lf === '') {
                 continue;
             }

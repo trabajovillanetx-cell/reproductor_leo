@@ -1,7 +1,11 @@
 <?php
 
+use App\Http\Controllers\Admin\ActiveSessionsController;
 use App\Http\Controllers\Admin\AdminCustomerController;
+use App\Http\Controllers\Admin\AdminCustomerStreamingProfileController;
+use App\Http\Controllers\Admin\AdminVendorController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\ChannelDiagnosticsController;
 use App\Http\Controllers\Admin\ContentController;
 use App\Http\Controllers\Admin\ContentPosterEnrichmentController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
@@ -13,23 +17,21 @@ use App\Http\Controllers\Admin\PlanController;
 use App\Http\Controllers\Admin\ResellerController;
 use App\Http\Controllers\Admin\StreamingAppearanceController;
 use App\Http\Controllers\Admin\ThemeAssetsController;
+use App\Http\Controllers\Admin\XtreamSourceController;
 use App\Http\Controllers\App\HeroPreviewUrlController;
 use App\Http\Controllers\App\HomeController as AppHomeController;
 use App\Http\Controllers\App\PlanExpiredController;
 use App\Http\Controllers\App\PlaybackRequestController;
 use App\Http\Controllers\App\StreamingProfileController;
-use App\Http\Controllers\Admin\AdminCustomerStreamingProfileController;
+use App\Http\Controllers\HeartbeatController;
 use App\Http\Controllers\Partner\CustomerStreamingProfileController as PartnerCustomerStreamingProfileController;
-use App\Http\Controllers\Admin\AdminVendorController;
-use App\Http\Controllers\Admin\ChannelDiagnosticsController;
-use App\Http\Controllers\Admin\XtreamSourceController;
-use App\Http\Controllers\PlayStreamController;
 use App\Http\Controllers\PlayerController;
-use App\Http\Controllers\TranscodeController;
+use App\Http\Controllers\PlayStreamController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Reseller\CustomerController as ResellerCustomerController;
 use App\Http\Controllers\Reseller\DashboardController as ResellerDashboardController;
 use App\Http\Controllers\Reseller\NetworkController as ResellerNetworkController;
+use App\Http\Controllers\TranscodeController;
 use App\Http\Controllers\Vendor\CustomerController as VendorCustomerController;
 use App\Http\Controllers\Vendor\DashboardController as VendorDashboardController;
 use Illuminate\Support\Facades\Route;
@@ -58,10 +60,17 @@ Route::get('/play/{content}/{token}', PlayStreamController::class)
 Route::get('/transcode/{content}/{token}', TranscodeController::class)
     ->name('play.transcode');
 
+Route::post('/heartbeat/{content}/{token}', HeartbeatController::class)
+    ->middleware('throttle:120,1')
+    ->name('player.heartbeat');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::delete('/profile/sessions/{session}', [ProfileController::class, 'destroySession'])
+        ->where('session', '[A-Za-z0-9]{10,255}')
+        ->name('profile.sessions.destroy');
 });
 
 Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -145,6 +154,11 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::get('diagnostics/channels', [ChannelDiagnosticsController::class, 'index'])->name('diagnostics.channels');
     Route::post('diagnostics/channels', [ChannelDiagnosticsController::class, 'diagnose'])->name('diagnostics.channels.diagnose');
 
+    Route::get('active-sessions', [ActiveSessionsController::class, 'index'])
+        ->name('active-sessions.index');
+    Route::get('active-sessions/data', [ActiveSessionsController::class, 'data'])
+        ->name('active-sessions.data');
+
     Route::get('library/carpetas', [LibraryFoldersController::class, 'index'])->name('library.folders.index');
     Route::post('library/carpetas/eliminar', [LibraryFoldersController::class, 'bulkDestroy'])->name('library.folders.bulk-destroy');
     Route::get('library/carpetas/caratulas', [LibraryFolderPosterController::class, 'index'])->name('library.folder-posters.index');
@@ -215,11 +229,11 @@ Route::middleware(['auth', 'verified', 'role:vendor'])->prefix('vendor')->name('
         ->name('customers.profiles.sold');
 });
 
-Route::middleware(['auth', 'verified', 'role:customer'])->prefix('app')->name('app.')->group(function () {
+Route::middleware(['auth', 'verified', 'role:customer', 'concurrent.sessions'])->prefix('app')->name('app.')->group(function () {
     Route::get('/plan-vencido', PlanExpiredController::class)->name('plan_expired');
 });
 
-Route::middleware(['auth', 'verified', 'role:customer', 'subscription.active'])->prefix('app')->name('app.')->group(function () {
+Route::middleware(['auth', 'verified', 'role:customer', 'subscription.active', 'concurrent.sessions'])->prefix('app')->name('app.')->group(function () {
     Route::get('/profiles', [StreamingProfileController::class, 'index'])->name('profiles.index');
     Route::post('/profiles', [StreamingProfileController::class, 'select'])->name('profiles.select');
     Route::post('/profiles/cambiar', [StreamingProfileController::class, 'switch'])->name('profiles.switch');
@@ -233,7 +247,7 @@ Route::middleware(['auth', 'verified', 'role:customer', 'subscription.active'])-
     });
 });
 
-Route::middleware(['auth', 'verified', 'role:customer', 'subscription.active', 'streaming.profile'])->prefix('player')->name('player.')->group(function () {
+Route::middleware(['auth', 'verified', 'role:customer', 'subscription.active', 'concurrent.sessions', 'streaming.profile'])->prefix('player')->name('player.')->group(function () {
     Route::get('/{content}/{token}', [PlayerController::class, 'show'])->name('show');
 });
 
