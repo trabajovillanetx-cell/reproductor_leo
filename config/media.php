@@ -46,6 +46,7 @@ return [
     |
     */
     'rclone_mount_root' => env('RCLONE_MOUNT_PATH', ''),
+    'rclone_mount_roots' => env('RCLONE_MOUNT_PATHS', ''),
 
     'rclone_binary' => env('RCLONE_PATH', 'rclone'),
 
@@ -111,4 +112,6 @@ return [
     */
     'raidrive_index_disk_stats' => filter_var(env('RAIDRIVE_INDEX_DISK_STATS', false), FILTER_VALIDATE_BOOL),
 
+    // Prefijos a eliminar del library_folder por índice de mount (ej: "2:Grupo plex/CONTENIDO LEO")
+    'rclone_strip_prefixes' => env('RCLONE_STRIP_PREFIXES', ''),
 ];

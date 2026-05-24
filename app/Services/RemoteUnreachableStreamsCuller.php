@@ -81,7 +81,11 @@ class RemoteUnreachableStreamsCuller
             }
 
             if ($idsToRemove !== [] && ! $dryRun) {
-                Content::query()->whereIn('id', $idsToRemove)->delete();
+                // Nunca borrar canales live automaticamente
+                Content::query()
+                    ->whereIn('id', $idsToRemove)
+                    ->where('type', '!=', 'live')
+                    ->delete();
             }
 
             $removed += count($idsToRemove);

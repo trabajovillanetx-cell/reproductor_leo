@@ -18,6 +18,10 @@
                 <a href="{{ route('admin.contents.index') }}" class="rounded-lg border border-cyan-400/40 bg-cyan-500/15 px-3 py-2.5 text-center text-[11px] font-bold uppercase tracking-wide text-cyan-100 shadow-[0_0_20px_-4px_rgba(34,211,238,0.45)] transition hover:bg-cyan-400/25 sm:px-4 sm:text-xs">Contenido</a>
                 <a href="{{ route('admin.m3u.import') }}" class="rounded-lg border border-fuchsia-400/35 bg-fuchsia-500/10 px-3 py-2.5 text-center text-[11px] font-bold uppercase tracking-wide text-fuchsia-100 transition hover:bg-fuchsia-500/20 sm:px-4 sm:text-xs">Importar M3U</a>
                 <a href="{{ route('admin.library.raidrive') }}" class="col-span-2 rounded-lg border border-lime-400/30 bg-lime-500/10 px-3 py-2.5 text-center text-[11px] font-bold uppercase tracking-wide text-lime-100 transition hover:bg-lime-500/20 sm:col-span-1 sm:px-4 sm:text-xs">Biblioteca local</a>
+                <form method="POST" action="{{ route('admin.library.sync') }}" class="col-span-2 sm:col-span-1">
+                    @csrf
+                    <button type="submit" class="w-full rounded-lg border border-emerald-400/40 bg-emerald-500/15 px-3 py-2.5 text-center text-[11px] font-bold uppercase tracking-wide text-emerald-100 shadow-[0_0_20px_-4px_rgba(52,211,153,0.45)] transition hover:bg-emerald-400/25 sm:px-4 sm:text-xs">⟳ Sincronizar biblioteca</button>
+                </form>
             </div>
         </div>
 

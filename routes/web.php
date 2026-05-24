@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\LocalLibraryController;
 use App\Http\Controllers\Admin\M3uImportController;
 use App\Http\Controllers\Admin\PlanController;
 use App\Http\Controllers\Admin\ResellerController;
+use App\Http\Controllers\Admin\SiteSettingsController;
 use App\Http\Controllers\Admin\StreamingAppearanceController;
 use App\Http\Controllers\Admin\ThemeAssetsController;
 use App\Http\Controllers\Admin\XtreamSourceController;
@@ -25,6 +26,7 @@ use App\Http\Controllers\App\PlaybackRequestController;
 use App\Http\Controllers\App\StreamingProfileController;
 use App\Http\Controllers\HeartbeatController;
 use App\Http\Controllers\Partner\CustomerStreamingProfileController as PartnerCustomerStreamingProfileController;
+use App\Http\Controllers\Partner\DemoController;
 use App\Http\Controllers\PlayerController;
 use App\Http\Controllers\PlayStreamController;
 use App\Http\Controllers\ProfileController;
@@ -34,6 +36,7 @@ use App\Http\Controllers\Reseller\NetworkController as ResellerNetworkController
 use App\Http\Controllers\TranscodeController;
 use App\Http\Controllers\Vendor\CustomerController as VendorCustomerController;
 use App\Http\Controllers\Vendor\DashboardController as VendorDashboardController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -73,8 +76,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('profile.sessions.destroy');
 });
 
+// ─── ADMIN ────────────────────────────────────────────────────────────────────
 Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', AdminDashboardController::class)->name('dashboard');
+
+    // Configuración de demos
+    Route::get('settings/demo', [SiteSettingsController::class, 'demoSettings'])->name('settings.demo');
+    Route::put('settings/demo', [SiteSettingsController::class, 'updateDemoSettings'])->name('settings.demo.update');
 
     Route::get('streaming-apariencia', [StreamingAppearanceController::class, 'edit'])->name('streaming-appearance.edit');
     Route::post('streaming-apariencia', [StreamingAppearanceController::class, 'update'])->name('streaming-appearance.update');
@@ -133,7 +141,6 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::get('m3u/gestion', [M3uImportController::class, 'manage'])->name('m3u.manage');
     Route::post('m3u/purgar-remotas', [M3uImportController::class, 'purgeRemote'])->name('m3u.purge-remote');
     Route::post('m3u/podar-no-responden', [M3uImportController::class, 'cullDeadRemotes'])->name('m3u.cull-unreachable');
-    // Barrido asíncrono (en background, sin bloquear el navegador)
     Route::post('m3u/podar-async', [M3uImportController::class, 'cullDeadRemotesAsync'])->name('m3u.cull-async');
     Route::get('m3u/podar-estado', [M3uImportController::class, 'cullStatus'])->name('m3u.cull-status');
     Route::post('m3u/escaneo-canales-sync', [M3uImportController::class, 'scanRemoteChannelsSync'])
@@ -154,10 +161,8 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::get('diagnostics/channels', [ChannelDiagnosticsController::class, 'index'])->name('diagnostics.channels');
     Route::post('diagnostics/channels', [ChannelDiagnosticsController::class, 'diagnose'])->name('diagnostics.channels.diagnose');
 
-    Route::get('active-sessions', [ActiveSessionsController::class, 'index'])
-        ->name('active-sessions.index');
-    Route::get('active-sessions/data', [ActiveSessionsController::class, 'data'])
-        ->name('active-sessions.data');
+    Route::get('active-sessions', [ActiveSessionsController::class, 'index'])->name('active-sessions.index');
+    Route::get('active-sessions/data', [ActiveSessionsController::class, 'data'])->name('active-sessions.data');
 
     Route::get('library/carpetas', [LibraryFoldersController::class, 'index'])->name('library.folders.index');
     Route::post('library/carpetas/eliminar', [LibraryFoldersController::class, 'bulkDestroy'])->name('library.folders.bulk-destroy');
@@ -181,6 +186,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('library/raidrive/sync-renames', [LocalLibraryController::class, 'syncRenamedFiles'])->name('library.raidrive.sync-renames');
 });
 
+// ─── RESELLER ─────────────────────────────────────────────────────────────────
 Route::middleware(['auth', 'verified', 'role:reseller'])->prefix('reseller')->name('reseller.')->group(function () {
     Route::get('/', ResellerDashboardController::class)->name('dashboard');
 
@@ -197,6 +203,10 @@ Route::middleware(['auth', 'verified', 'role:reseller'])->prefix('reseller')->na
     Route::post('customers/{customer}/suspend', [ResellerCustomerController::class, 'suspend'])->name('customers.suspend');
     Route::post('customers/{customer}/activate', [ResellerCustomerController::class, 'activate'])->name('customers.activate');
 
+    // Demos — sin costo de créditos
+    Route::get('demos/create', fn () => app(DemoController::class)->create('reseller'))->name('demos.create');
+    Route::post('demos', fn (Request $request) => app(DemoController::class)->store($request, 'reseller'))->name('demos.store');
+
     Route::get('customers/{customer}/espacios', [PartnerCustomerStreamingProfileController::class, 'edit'])
         ->defaults('partner_route_prefix', 'reseller')
         ->name('customers.streaming-profiles.edit');
@@ -208,6 +218,7 @@ Route::middleware(['auth', 'verified', 'role:reseller'])->prefix('reseller')->na
         ->name('customers.profiles.sold');
 });
 
+// ─── VENDOR ───────────────────────────────────────────────────────────────────
 Route::middleware(['auth', 'verified', 'role:vendor'])->prefix('vendor')->name('vendor.')->group(function () {
     Route::get('/', VendorDashboardController::class)->name('dashboard');
 
@@ -218,6 +229,10 @@ Route::middleware(['auth', 'verified', 'role:vendor'])->prefix('vendor')->name('
     Route::post('customers/{customer}/suspend', [VendorCustomerController::class, 'suspend'])->name('customers.suspend');
     Route::post('customers/{customer}/activate', [VendorCustomerController::class, 'activate'])->name('customers.activate');
 
+    // Demos — sin costo de créditos
+    Route::get('demos/create', fn () => app(DemoController::class)->create('vendor'))->name('demos.create');
+    Route::post('demos', fn (Request $request) => app(DemoController::class)->store($request, 'vendor'))->name('demos.store');
+
     Route::get('customers/{customer}/espacios', [PartnerCustomerStreamingProfileController::class, 'edit'])
         ->defaults('partner_route_prefix', 'vendor')
         ->name('customers.streaming-profiles.edit');
@@ -229,6 +244,7 @@ Route::middleware(['auth', 'verified', 'role:vendor'])->prefix('vendor')->name('
         ->name('customers.profiles.sold');
 });
 
+// ─── CUSTOMER ─────────────────────────────────────────────────────────────────
 Route::middleware(['auth', 'verified', 'role:customer', 'concurrent.sessions'])->prefix('app')->name('app.')->group(function () {
     Route::get('/plan-vencido', PlanExpiredController::class)->name('plan_expired');
 });
@@ -252,3 +268,42 @@ Route::middleware(['auth', 'verified', 'role:customer', 'subscription.active', '
 });
 
 require __DIR__.'/auth.php';
+
+// ─── IPTV / Xtream Codes API ──────────────────────────────────────────────────
+Route::get('/iptv/{username}/{password}/playlist.m3u', [\App\Http\Controllers\IptvController::class, 'playlist'])
+    ->name('iptv.playlist');
+Route::get('/iptv/{username}/{password}/player_api.php', [\App\Http\Controllers\IptvController::class, 'playerApi'])
+    ->name('iptv.player_api');
+Route::get('/get.php', [\App\Http\Controllers\IptvController::class, 'playerApi'])
+    ->name('iptv.get');
+
+Route::post('/admin/sessions/{token}/command', [\App\Http\Controllers\Admin\SessionCommandController::class, 'send'])
+    ->middleware(['auth', 'role:admin'])
+    ->name('admin.sessions.command');
+
+Route::post('/admin/library/sync', function () {
+    $cmd = 'cd /var/www/reproductor_leo && php artisan library:sync >> /tmp/library-sync.log 2>&1 && php artisan cache:clear >> /tmp/library-sync.log 2>&1 &';
+    shell_exec($cmd);
+    return redirect()->back()->with('success', '✓ Sincronización iniciada en segundo plano. El contenido nuevo aparecerá en unos minutos.');
+})->middleware(['auth', 'role:admin'])->name('admin.library.sync');
+
+Route::get('/player_api.php', function (\Illuminate\Http\Request $request) {
+    $username = $request->query('username', '');
+    $password = $request->query('password', '');
+    return app(\App\Http\Controllers\IptvController::class)->playerApi($request, $username, $password);
+});
+Route::get('/get.php', function (\Illuminate\Http\Request $request) {
+    $username = $request->query('username', '');
+    $password = $request->query('password', '');
+    return app(\App\Http\Controllers\IptvController::class)->playlist($request, $username, $password);
+});
+
+Route::get('/movie/{username}/{password}/{file}', [\App\Http\Controllers\IptvController::class, 'streamVod'])
+    ->where('file', '[0-9]+(\..*)?')
+    ->name('iptv.movie');
+Route::get('/live/{username}/{password}/{file}', [\App\Http\Controllers\IptvController::class, 'streamLive'])
+    ->where('file', '[0-9]+(\..*)?')
+    ->name('iptv.live');
+Route::get('/series/{username}/{password}/{file}', [\App\Http\Controllers\IptvController::class, 'streamSeries'])
+    ->where('file', '[0-9]+(\..*)?')
+    ->name('iptv.series');

@@ -39,7 +39,7 @@ class EnrichContentPostersCommand extends Command
         $dry = (bool) $this->option('dry-run');
 
         $candidates = Content::query()
-            ->whereIn('type', [ContentType::Vod, ContentType::Series, ContentType::Live])
+            ->whereIn('type', [ContentType::Vod, ContentType::Series])
             ->where(function ($q): void {
                 $q->whereNull('poster_url')->orWhere('poster_url', '');
             })

@@ -220,6 +220,10 @@
                             @endif
                         </div>
                     @else
+                        <div class="mb-2 flex gap-2">
+                            <button type="button" onclick="this.closest('form').querySelectorAll('input[type=checkbox]').forEach(cb=>cb.checked=true)" class="rounded-lg border border-gray-300 px-3 py-1 text-xs font-semibold hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-800">✓ Seleccionar todos</button>
+                            <button type="button" onclick="this.closest('form').querySelectorAll('input[type=checkbox]').forEach(cb=>cb.checked=false)" class="rounded-lg border border-gray-300 px-3 py-1 text-xs font-semibold hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-800">✗ Deseleccionar todos</button>
+                        </div>
                         <div class="max-h-80 space-y-2 overflow-y-auto rounded-lg border border-gray-100 p-2 dark:border-gray-800">
                             @foreach ($browse['files'] as $f)
                                 <label class="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">

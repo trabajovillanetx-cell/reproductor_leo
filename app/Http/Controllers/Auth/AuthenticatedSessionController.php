@@ -33,6 +33,7 @@ class AuthenticatedSessionController extends Controller
         $home = match ($user->role) {
             UserRole::Admin => route('admin.dashboard', absolute: false),
             UserRole::Reseller => route('reseller.dashboard', absolute: false),
+            UserRole::Vendor => route('vendor.dashboard', absolute: false),
             UserRole::Customer => route('app.profiles.index', absolute: false),
         };
 

@@ -479,15 +479,15 @@ class M3uImportController extends Controller
                     continue;
                 }
                 $this->authorize('delete', $content);
-                ManagedContentPosterFiles::deleteIfManaged($content->poster_url);
-                $content->delete();
+                // En lugar de eliminar, marcar como inactivo para poder recuperarlo
+                $content->update(['is_active' => false]);
                 $deleted++;
             }
         });
 
         return response()->json([
             'ok'                   => true,
-            'deleted'              => $deleted,
+            'deactivated'          => $deleted,
             'skipped_not_remote'   => $skipped,
             'message'              => $deleted === 0
                 ? 'No se eliminó ningún ítem (permisos o ya no son URLs http(s)).'

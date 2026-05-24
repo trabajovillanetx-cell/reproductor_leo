@@ -118,11 +118,11 @@
                     <button type="button" class="admin-btn-secondary text-sm" @click="clearSelection()">Desmarcar</button>
                     <button
                         type="button"
-                        class="rounded-xl border-2 border-red-700 bg-red-700 px-4 py-2 text-sm font-bold text-white shadow hover:bg-red-800 disabled:opacity-50"
+                        class="rounded-xl border-2 border-amber-600 bg-amber-600 px-4 py-2 text-sm font-bold text-white shadow hover:bg-amber-700 disabled:opacity-50"
                         :disabled="deleting || selectedCount() === 0"
                         @click="deleteSelected()"
                     >
-                        <span x-text="deleting ? 'Borrando…' : ('🗑️ Eliminar marcados (' + selectedCount() + ')')"></span>
+                        <span x-text="deleting ? 'Desactivando…' : ('⏸ Desactivar marcados (' + selectedCount() + ')')"></span>
                     </button>
                 </div>
 

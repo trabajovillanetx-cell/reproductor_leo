@@ -15,6 +15,7 @@ use App\Support\TmdbImageUrl;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -42,7 +43,12 @@ class HomeController extends Controller
             ->orderBy('name')
             ->get();
 
-        $contentsQuery = $this->catalogBaseQuery((string) $search, $section);
+        // Cache de conteo para evitar queries lentas en cada clic
+        $cacheKey = 'catalog_' . $section . '_' . md5((string)$search . $lib);
+        
+        // Si hay búsqueda activa, ignorar la sección y buscar en todo el catálogo
+        $searchSection = (string) $search !== '' ? 'todas' : $section;
+        $contentsQuery = $this->catalogBaseQuery((string) $search, $searchSection);
 
         if ($lib !== '') {
             $contentsQuery->where(function (Builder $q) use ($lib): void {
@@ -52,8 +58,13 @@ class HomeController extends Controller
         }
 
         $navBase = $this->catalogBaseQuery((string) $search, $section);
-        $folderNav = StreamingCatalogNav::libraryFolderNav($navBase, $lib);
-        $folderNav = $this->mergeFolderNavPreviewPosters($folderNav, $navBase);
+        
+        // Cache folderNav por 5 minutos — es la consulta más pesada
+        $folderCacheKey = 'folder_nav_' . $section . '_' . md5($lib . (string)$search);
+        $folderNav = Cache::remember($folderCacheKey, 300, function() use ($navBase, $lib) {
+            $nav = StreamingCatalogNav::libraryFolderNav(clone $navBase, $lib);
+            return $this->mergeFolderNavPreviewPosters($nav, clone $navBase);
+        });
 
         $folderBrowseRows = $folderNav;
         if ($section === 'todas' && $lib === '' && (string) $search === '' && count($folderNav) === 1) {
@@ -89,6 +100,7 @@ class HomeController extends Controller
             ->where(function (Builder $q): void {
                 $q->whereNull('library_folder')->orWhere('library_folder', '');
             })
+            ->where('type', '!=', 'live')
             ->exists();
 
         /*
@@ -97,8 +109,10 @@ class HomeController extends Controller
          * —típico de listas M3U (library_folder vacío)— la rejilla debe mostrarse; si no, los canales “sueltos”
          * desaparecen aunque el menú sugiera contenido por carpetas RaiDrive.
          */
-        $suppressRootCatalog = in_array($section, ['peliculas', 'series', 'tv'], true)
-            && $lib === ''
+        $suppressRootCatalog = (
+            (in_array($section, ['peliculas', 'series', 'tv'], true) && $lib === '')
+            || ($lib !== '' && count($folderBrowseRows) > 0)
+        )
             && (string) $search === ''
             && count($folderBrowseRows) > 0
             && ! $hasFlatCatalogAtRoot;
@@ -153,7 +167,74 @@ class HomeController extends Controller
             ]);
             $contents->withQueryString();
         } else {
-            $contents = $contentsQuery->paginate(24)->withQueryString();
+            // Agrupar series por library_folder cuando no se navega dentro de una carpeta
+            if ($lib === '' && (string) $search === '' && in_array($section, ['todas', 'series'], true)) {
+                // Obtener IDs únicos por library_folder (primer episodio de cada serie/carpeta)
+                $groupedIds = \Illuminate\Support\Facades\DB::table('contents')
+                    ->select(\Illuminate\Support\Facades\DB::raw('MIN(id) as id'))
+                    ->where('is_active', true)
+                    ->where('type', 'series')
+                    ->whereExists(function ($q) {
+                        $q->select(\Illuminate\Support\Facades\DB::raw(1))
+                          ->from('categories')
+                          ->whereColumn('categories.id', 'contents.category_id')
+                          ->where('categories.is_active', true);
+                    })
+                    ->groupBy('library_folder')
+                    ->pluck('id');
+
+                $seriesContents = Content::whereIn('id', $groupedIds)
+                    ->with('category')
+                    ->orderByDesc('id');
+
+                if ($section === 'todas') {
+                    // Mezclar con VOD sin agrupar
+                    $vodContents = clone $contentsQuery;
+                    $vodContents->where('type', '!=', 'series');
+                    $contents = $vodContents->paginate(50)->withQueryString();
+                } else {
+                    $contents = $seriesContents->paginate(50)->withQueryString();
+                }
+            } else {
+                $contents = $contentsQuery->paginate(50)->withQueryString();
+            }
+        }
+
+        // Títulos más recientes para mostrar en el inicio
+        $latestContents = collect();
+        if ($section === 'todas' && $lib === '' && (string) $search === '') {
+            // Mostrar solo un item por library_folder — el primero de cada carpeta
+            // y usar el nombre de la carpeta como título para series
+            $latestFolders = \Illuminate\Support\Facades\DB::table('contents')
+                ->select(
+                    \Illuminate\Support\Facades\DB::raw('MIN(id) as id'),
+                    \Illuminate\Support\Facades\DB::raw('MAX(id) as max_id'),
+                    'library_folder'
+                )
+                ->where('is_active', true)
+                ->where('type', '!=', 'live')
+                ->whereNotNull('poster_url')
+                ->where('poster_url', '!=', '')
+                ->groupBy('library_folder')
+                ->orderByDesc(\Illuminate\Support\Facades\DB::raw('MAX(id)'))
+                ->limit(24)
+                ->get();
+
+            $latestContents = Content::query()
+                ->whereIn('id', $latestFolders->pluck('id'))
+                ->whereHas('category', fn ($q) => $q->where('is_active', true))
+                ->with('category')
+                ->get()
+                ->map(function ($content) {
+                    // Para series, usar el nombre de la carpeta como título
+                    if ($content->type->value === 'series') {
+                        $parts = explode('/', $content->library_folder);
+                        $content->title = end($parts);
+                    }
+                    return $content;
+                })
+                ->sortByDesc('id')
+                ->values();
         }
 
         return view('app.home', [
@@ -288,9 +369,18 @@ class HomeController extends Controller
     private function heroSlidesPayload(): array
     {
         $dayKey = now()->timezone(config('app.timezone'))->toDateString();
+        $cacheKey = 'hero_slides_'.$dayKey;
+
+        $cached = Cache::get($cacheKey);
+        if ($cached !== null) {
+            return $cached;
+        }
 
         $ids = Content::query()
             ->where('is_active', true)
+            ->where('type', 'vod')
+            ->whereNotNull('poster_url')
+            ->where('poster_url', '!=', '')
             ->whereHas('category', fn ($q) => $q->where('is_active', true))
             ->pluck('id')
             ->all();
@@ -306,7 +396,7 @@ class HomeController extends Controller
             return $ha <=> $hb;
         });
 
-        $pick = array_slice($ids, 0, 8);
+        $pick = array_slice($ids, 0, 10);
 
         $contents = Content::query()
             ->whereIn('id', $pick)
@@ -316,9 +406,20 @@ class HomeController extends Controller
             ->values();
 
         $mimeResolver = app(StreamMimeResolver::class);
+        $tokens = app(\App\Services\PlaybackTokenService::class);
+        $user = auth()->user();
 
-        return $contents->map(function (Content $c) use ($mimeResolver): array {
+        $result = $contents->map(function (Content $c) use ($mimeResolver, $tokens, $user): array {
             $desc = Str::limit(strip_tags((string) ($c->description ?? '')), 260);
+            $supportsPreview = $mimeResolver->supportsHeroPreview($c);
+            $streamUrl = null;
+            $isHls = false;
+            if ($supportsPreview && $user) {
+                $ttl = max(2, min(15, (int) config('streaming.hero_preview_token_ttl_minutes', 4)));
+                $tok = $tokens->create($user, $c, null, $ttl);
+                $streamUrl = route('play.stream', ['content' => $c->id, 'token' => $tok->token]);
+                $isHls = $mimeResolver->videoMime($c) === 'application/x-mpegURL';
+            }
 
             return [
                 'title' => $c->title,
@@ -326,7 +427,9 @@ class HomeController extends Controller
                 'poster' => TmdbImageUrl::upsizePosterForHero($c->poster_url),
                 'playUrl' => route('app.playback.prepare', $c),
                 'contentId' => $c->id,
-                'preview' => $mimeResolver->supportsHeroPreview($c),
+                'preview' => $supportsPreview,
+                'streamUrl' => $streamUrl,
+                'isHls' => $isHls,
                 'typeLabel' => match ($c->type) {
                     ContentType::Vod => 'Película',
                     ContentType::Series => 'Serie',
@@ -334,5 +437,9 @@ class HomeController extends Controller
                 },
             ];
         })->all();
+
+        Cache::put($cacheKey, $result, now()->endOfDay());
+
+        return $result;
     }
 }

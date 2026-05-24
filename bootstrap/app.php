@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\CheckActiveSubscription;
+use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\CheckConcurrentSessions;
 use App\Http\Middleware\EnsureStreamingProfileSelected;
 use App\Http\Middleware\EnsureUserRole;
@@ -17,6 +18,9 @@ use Illuminate\Support\Facades\Log;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
+        then: function () {
+            Route::pattern('file', '[^/]+');
+        },
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
@@ -31,6 +35,7 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withSchedule(function (Schedule $schedule): void {
         $schedule->command('sessions:prune')->everyFifteenMinutes()->withoutOverlapping(5);
+        $schedule->command('users:expire')->hourly()->withoutOverlapping(5);
 
         $schedule->command('model:prune', [
             '--model' => PlaybackToken::class,
@@ -69,3 +74,4 @@ return Application::configure(basePath: dirname(__DIR__))
             return null;
         });
     })->create();
+

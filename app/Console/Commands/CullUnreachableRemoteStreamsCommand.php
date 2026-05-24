@@ -28,6 +28,13 @@ class CullUnreachableRemoteStreamsCommand extends Command
             ? mb_strtolower($typeRaw)
             : null;
 
+        // Proteccion: nunca borrar live sin confirmacion explicita
+        if (!$dry && ($restrictType === null || $restrictType === 'live')) {
+            if (!$this->confirm('⚠️  Esto puede borrar canales LIVE. ¿Seguro?', false)) {
+                $this->warn('Cancelado.');
+                return self::SUCCESS;
+            }
+        }
         $this->info($dry ? 'Simulación (no se borrará nada)…' : 'Comprobando URLs y borrando entradas caídas…');
 
         $report = $culler->cull($categoryId, $dry, $dry ? 40 : 0, $restrictType);

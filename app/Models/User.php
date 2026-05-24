@@ -17,7 +17,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 #[Fillable([
-    'name',
+    'name', 'username',
     'email',
     'password',
     'provider_password',
@@ -25,6 +25,7 @@ use Illuminate\Notifications\Notifiable;
     'parent_id',
     'status',
     'expires_at',
+    'is_demo',
 ])]
 #[Hidden(['password', 'provider_password', 'remember_token'])]
 class User extends Authenticatable
@@ -39,6 +40,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'provider_password' => 'encrypted',
             'expires_at' => 'datetime',
+            'is_demo' => 'boolean',
             'role' => UserRole::class,
             'status' => UserStatus::class,
         ];

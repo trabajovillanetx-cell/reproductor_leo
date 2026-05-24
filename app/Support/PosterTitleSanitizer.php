@@ -12,6 +12,17 @@ final class PosterTitleSanitizer
     /**
      * Limpieza extra para nombres de canal en listas IPTV (#EXTINF:-1,010 - ESPN, 53 SPACE HD 10728 V, etc.).
      */
+
+    public static function extractYear(string $title): ?int
+    {
+        if (preg_match('/\\b((?:19|20)\\d{2})\\b/', $title, $m)) {
+            $y = (int) $m[1];
+            if ($y >= 1900 && $y <= 2099) {
+                return $y;
+            }
+        }
+        return null;
+    }
     public static function forLiveChannelSearch(string $title): string
     {
         $t = rawurldecode(trim($title));
@@ -32,6 +43,9 @@ final class PosterTitleSanitizer
         $t = rawurldecode(trim($title));
         $t = html_entity_decode($t, ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $t = str_replace('+', ' ', $t);
+        // Limpiar dominios/sitios ANTES de convertir puntos en espacios
+        $t = preg_replace('/\.(?:cinecalidad|cineytv|pelisplus|cuevana|mejortorrent|gnula|peliculasgo|repelis|mega1080p|fullhd720)(?:\.[a-z]{2,4})*/iu', '', $t) ?? $t;
+        $t = preg_replace('/\.(?:com|mx|to|net|org|io)(?:\/[^\s]*)?\.?$/iu', '', $t) ?? $t;
         $t = str_replace(['_', '.'], ' ', $t);
         // Títulos pegados tipo "tiempoSidelined" → espacio antes de mayúscula (latin-1)
         $t = preg_replace('/([a-záéíóúñ])([A-ZÁÉÍÓÚÑ])/u', '$1 $2', $t) ?? $t;
@@ -48,6 +62,23 @@ final class PosterTitleSanitizer
         $t = preg_replace('/\b(?:TS|CAM|SCR)\b/iu', '', $t) ?? $t;
         $t = preg_replace('/\bHD\b/iu', '', $t) ?? $t;
         $t = preg_replace('/\b(?:S\d{1,2}\s*[Ee]\d{1,2}|\d{1,2}\s*[Xx]\s*\d{1,2})\b/u', '', $t) ?? $t;
+
+        // Prefijos basura
+        $t = preg_replace('/^copy\\s+of\\s+/iu', '', $t) ?? $t;
+        // Sitios de descarga latinos
+        $t = preg_replace('/[-.](?:cinecalidad|cineytv|pelisplus|cuevana|mejortorrent|gnula|peliculasgo|repelis|mega1080p|fullhd720)(?:\\.[a-z]{2,4})*\\b/iu', '', $t) ?? $t;
+        // Tags audio/idioma con guion o espacio
+        $t = preg_replace('/[-.](?:dual-?lat|dual|lat|latino|castellano|sub|line)\\b/iu', '', $t) ?? $t;
+        $t = preg_replace('/\\s+(?:LAT|DUAL|LINE)\\b/iu', '', $t) ?? $t;
+        // Calidades con guion
+        $t = preg_replace('/[-.](?:1080p|720p|480p|2160p|4k|hdrip|bdrip|webrip|web|bluray|hdtv)\\b/iu', '', $t) ?? $t;
+        // Doblada/Doblaje al final
+        $t = preg_replace('/\\s+(?:doblad[ao]|doblaje)\\s*$/iu', '', $t) ?? $t;
+        // Año suelto al final
+        $t = preg_replace('/\\s+(19|20)\\d{2}\\s*$/', '', $t) ?? $t;
+        // Paréntesis con número al final: "(1)"
+        $t = preg_replace('/\\s*\\(\\d+\\)\\s*$/', '', $t) ?? $t;
+
         $t = preg_replace('/\s{2,}/u', ' ', $t) ?? $t;
 
         return Str::limit(trim($t), 140, '');

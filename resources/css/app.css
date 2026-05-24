@@ -279,7 +279,8 @@ body.streaming-cyber-shell #buscar-catalogo {
 body.streaming-cyber-shell .streaming-cyber-poster {
     border-radius: 0.875rem;
     box-shadow:
-        0 0 0 1px rgba(34, 211, 238, 0.1),
+        0 0 0 2px rgba(34, 255, 100, 0.6),
+        0 0 14px rgba(34, 255, 100, 0.3),
         0 14px 36px -14px rgba(0, 0, 0, 0.88);
 }
 
@@ -317,6 +318,13 @@ body.streaming-cyber-shell .streaming-cyber-poster {
     justify-content: center;
     overflow: hidden;
 }
+
+.poster-type-vod { box-shadow: 0 0 0 2px rgba(34,255,100,.7), 0 0 14px rgba(34,255,100,.35), 0 14px 36px -14px rgba(0,0,0,.88) !important; }
+.poster-type-series { box-shadow: 0 0 0 2px rgba(255,230,0,.7), 0 0 14px rgba(255,230,0,.35), 0 14px 36px -14px rgba(0,0,0,.88) !important; }
+.poster-type-live { box-shadow: 0 0 0 2px rgba(0,180,255,.7), 0 0 14px rgba(0,180,255,.35), 0 14px 36px -14px rgba(0,0,0,.88) !important; }
+.poster-type-vod:hover { box-shadow: 0 0 0 2px rgba(34,255,100,1), 0 0 28px rgba(34,255,100,.6), 0 18px 40px -12px rgba(0,0,0,.9) !important; }
+.poster-type-series:hover { box-shadow: 0 0 0 2px rgba(255,230,0,1), 0 0 28px rgba(255,230,0,.6), 0 18px 40px -12px rgba(0,0,0,.9) !important; }
+.poster-type-live:hover { box-shadow: 0 0 0 2px rgba(0,180,255,1), 0 0 28px rgba(0,180,255,.6), 0 18px 40px -12px rgba(0,0,0,.9) !important; }
 
 body.streaming-cyber-shell .group:hover .streaming-cyber-poster {
     box-shadow:

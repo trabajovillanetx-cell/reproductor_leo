@@ -30,11 +30,11 @@
     <div class="streaming-cyber-login-wash pointer-events-none fixed inset-0" aria-hidden="true"></div>
     @if ($bgSafe !== '')
         <div
-            class="pointer-events-none fixed inset-0 bg-cover bg-center bg-no-repeat opacity-[0.42] mix-blend-soft-light sm:opacity-[0.48]"
+            class="pointer-events-none fixed inset-0 bg-cover bg-center bg-no-repeat opacity-[0.75] sm:opacity-[0.85]"
             style="background-image: url('{{ $bgSafe }}');"
             aria-hidden="true"
         ></div>
-        <div class="pointer-events-none fixed inset-0 bg-gradient-to-t from-[#050814]/72 via-[#050814]/25 to-cyan-500/8" aria-hidden="true"></div>
+        <div class="pointer-events-none fixed inset-0 bg-gradient-to-t from-[#050814]/60 via-[#050814]/10 to-cyan-500/5" aria-hidden="true"></div>
     @endif
 
     <div class="relative z-10 flex min-h-screen min-h-[100dvh] flex-col items-center justify-center px-4 py-10 sm:px-6">

@@ -39,6 +39,10 @@ return [
     | The Movie Database (TMDB) API v3 — carátulas para VOD/Series sin poster.
     | Clave gratuita: https://www.themoviedb.org/settings/api
     */
+    'jellyfin' => [
+        'url'     => env('JELLYFIN_URL', ''),
+        'api_key' => env('JELLYFIN_API_KEY', ''),
+    ],
     'tmdb' => [
         'key' => env('TMDB_API_KEY'),
         'language' => env('TMDB_LANGUAGE', 'es-ES'),

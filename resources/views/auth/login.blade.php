@@ -157,7 +157,7 @@
             <x-input-error :messages="$errors->get('password')" class="text-center text-sm text-red-300" />
         </div>
 
-        <div class="flex flex-wrap items-center justify-between gap-3 text-[13px] text-white/70">
+        <div class="hidden">
             <label for="remember_me" class="inline-flex cursor-pointer select-none items-center gap-2.5 font-medium">
                 <input id="remember_me" type="checkbox" name="remember" class="h-4 w-4 rounded border-cyan-500/40 bg-black/30 text-cyan-500 focus:ring-cyan-400/50">
                 {{ __('Remember me') }}

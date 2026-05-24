@@ -68,7 +68,7 @@ class TmdbPosterService
     /**
      * Busca en TMDB y devuelve URL absoluta del póster, o null.
      */
-    public function posterUrlForTitle(string $title, ContentType $type): ?string
+    public function posterUrlForTitle(string $title, ContentType $type, ?int $year = null): ?string
     {
         if (! $this->isConfigured()) {
             return null;
@@ -111,10 +111,12 @@ class TmdbPosterService
         foreach ($queries as $searchQuery) {
             foreach ([$primary, $alternate] as $endpoint) {
                 foreach ($languages as $language) {
-                    $url = $this->searchBestPosterUrl($endpoint, $searchQuery, $language);
-                    if ($url !== null) {
-                        return $url;
+                    if ($year !== null) {
+                        $url = $this->searchBestPosterUrl($endpoint, $searchQuery, $language, $year);
+                        if ($url !== null) { return $url; }
                     }
+                    $url = $this->searchBestPosterUrl($endpoint, $searchQuery, $language);
+                    if ($url !== null) { return $url; }
                 }
             }
         }
@@ -150,7 +152,7 @@ class TmdbPosterService
     /**
      * Entre los resultados con póster, elige el de mayor popularidad (mejor que el índice 0 a ciegas).
      */
-    private function searchBestPosterUrl(string $endpoint, string $query, string $language): ?string
+    private function searchBestPosterUrl(string $endpoint, string $query, string $language, ?int $year = null): ?string
     {
         try {
             $response = $this->tmdbHttp()
@@ -160,6 +162,7 @@ class TmdbPosterService
                     'query' => $query,
                     'language' => $language,
                     'include_adult' => 'false',
+                    ...($year !== null ? (str_contains($endpoint, 'tv') ? ['first_air_date_year' => $year] : ['primary_release_year' => $year]) : []),
                 ]);
         } catch (\Illuminate\Http\Client\ConnectionException $e) {
             Log::warning('tmdb.connection_error', [
@@ -250,7 +253,8 @@ class TmdbPosterService
             return false;
         }
 
-        $url = $this->posterUrlForTitle((string) $content->title, $content->type);
+        $year = \App\Support\PosterTitleSanitizer::extractYear((string) $content->title);
+        $url = $this->posterUrlForTitle((string) $content->title, $content->type, $year);
         if ($url === null) {
             return false;
         }

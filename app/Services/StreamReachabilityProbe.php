@@ -177,7 +177,7 @@ class StreamReachabilityProbe
             return false;
         }
 
-        return $this->httpPlaylistSnippetIsValid((string) $response->body());
+        return $this->httpPlaylistSnippetIsValid((string) $response->body(), $url);
     }
 
     /** Algunos servidores rechazan Range en listas minúsculas y responden 416. */
@@ -197,7 +197,7 @@ class StreamReachabilityProbe
                 return false;
             }
 
-            return $this->httpPlaylistSnippetIsValid((string) $r->body());
+            return $this->httpPlaylistSnippetIsValid((string) $r->body(), $url);
         } catch (\Throwable) {
             return false;
         }
@@ -287,7 +287,7 @@ class StreamReachabilityProbe
         return ! str_contains($ct, 'text/html') || str_starts_with(trim($body), '#EXT');
     }
 
-    public function httpPlaylistSnippetIsValid(string $body): bool
+    public function httpPlaylistSnippetIsValid(string $body, ?string $manifestUrl = null): bool
     {
         if (trim($body) === '') {
             return false;
@@ -296,21 +296,82 @@ class StreamReachabilityProbe
         $head = substr($body, 0, 6144);
 
         // Validación estándar HLS
+        $isHls = false;
         if (preg_match('/^\s*#EXTM3U/im', $head) === 1) {
-            return true;
+            $isHls = true;
+        }
+        if (preg_match('/#EXTINF|#EXT-X-(STREAM-INF|MEDIA|TARGETDURATION)/i', $head) === 1) {
+            $isHls = true;
         }
 
-        if (preg_match('/#EXTINF|#EXT-X-(STREAM-INF|MEDIA|TARGETDURATION)/i', $head) === 1) {
+        if ($isHls) {
+            // Verificar primer segmento o sub-playlist
+            if ($manifestUrl !== null) {
+                $segmentUrl = $this->extractFirstSegmentUrl($body, $manifestUrl);
+                if ($segmentUrl !== null) {
+                    if (!$this->probeSegmentUrl($segmentUrl)) {
+                        return false;
+                    }
+                }
+            }
             return true;
         }
 
         // Algunos servidores IPTV responden con fragmento TS binario directamente (200 con video/mp2t)
-        // Los primeros bytes de un TS son siempre 0x47 (sync byte)
         if (strlen($body) > 0 && ord($body[0]) === 0x47) {
             return true;
         }
 
         return false;
+    }
+
+    private function extractFirstSegmentUrl(string $body, string $baseUrl): ?string
+    {
+        $lines = explode("\n", $body);
+        $base = preg_replace('/[^\/]*$/', '', $baseUrl);
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if ($line === '' || str_starts_with($line, '#')) {
+                continue;
+            }
+            if (str_starts_with($line, 'http://') || str_starts_with($line, 'https://')) {
+                return $line;
+            }
+            return $base . $line;
+        }
+        return null;
+    }
+
+    private function probeSegmentUrl(string $url): bool
+    {
+        try {
+            // Solo verificar sub-manifests (.m3u8), no segmentos TS (expiran en segundos)
+            $lower = strtolower($url);
+            $isSubManifest = str_contains($lower, '.m3u8') || preg_match('#/play/[a-z0-9_-]+/[a-z0-9_-]+\.m3u8#i', $lower);
+            
+            if (!$isSubManifest) {
+                // No verificar segmentos TS — expiran demasiado rápido
+                return true;
+            }
+
+            $r = Http::connectTimeout(5)
+                ->timeout(10)
+                ->withHeaders($this->defaultHeaders())
+                ->get($url);
+
+            if (!$r->successful()) {
+                return false;
+            }
+
+            $body = (string) $r->body();
+            // HTML = error disfrazado
+            if (str_contains(strtolower(substr($body, 0, 200)), '<html')) {
+                return false;
+            }
+            return true;
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     /** @throws \Throwable */

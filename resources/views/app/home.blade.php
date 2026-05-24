@@ -93,6 +93,44 @@
             ])
         @endif
 
+        {{-- Recién agregados: solo en inicio --}}
+        @if (($section ?? 'todas') === 'todas' && ($lib ?? '') === '' && ($search ?? '') === '' && ($latestContents ?? collect())->isNotEmpty())
+            <section class="mx-auto mb-10 max-w-6xl px-4 sm:px-8 lg:px-0" aria-labelledby="latest-heading">
+                <div class="mb-4 sm:mb-5">
+                    <h2 id="latest-heading" class="text-sm font-bold uppercase tracking-[0.18em] text-white/45">Recién agregados</h2>
+                    <p class="mt-1 text-xs text-white/40">Los últimos títulos sumados al catálogo.</p>
+                </div>
+                <div class="streaming-catalog-grid isolate">
+                    @foreach ($latestContents as $item)
+                        @php
+                            $isSeries = $item->type->value === 'series';
+                            $folderParts = explode('/', $item->library_folder);
+                            $folderTitle = end($folderParts);
+                            $displayTitle = $isSeries ? $folderTitle : $item->title;
+                            $section = $isSeries ? 'series' : 'peliculas';
+                            $itemUrl = $isSeries
+                                ? route('app.home', ['section' => $section, 'lib' => $item->library_folder])
+                                : route('app.playback.prepare', $item);
+                        @endphp
+                        <article class="min-w-0">
+                            <a href="{{ $itemUrl }}" class="group flex min-h-0 min-w-0 w-full flex-1 flex-col" aria-label="{{ $displayTitle }}">
+                                <div class="streaming-cyber-poster streaming-poster-tile relative z-0 w-full bg-slate-900 shadow-md shadow-black/30 ring-1 ring-white/10 transition duration-300 ease-out group-hover:z-20 group-hover:-translate-y-1 group-hover:ring-fuchsia-400/45 rounded-xl">
+                                    @if ($item->poster_url)
+                                        <img src="{{ $item->poster_url }}" alt="" role="presentation" class="transition duration-300 ease-out group-hover:brightness-110" loading="lazy" decoding="async">
+                                    @else
+                                        <div class="streaming-poster-placeholder gap-2 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 px-2">
+                                            <span class="pointer-events-none text-center text-[10px] font-semibold uppercase tracking-widest text-white/35">Sin carátula</span>
+                                        </div>
+                                    @endif
+                                </div>
+                                <p class="mt-2.5 line-clamp-2 text-center text-[13px] font-semibold leading-snug text-white/90 group-hover:text-white">{{ $displayTitle }}</p>
+                            </a>
+                        </article>
+                    @endforeach
+                </div>
+            </section>
+        @endif
+
         {{-- Búsqueda solo visible con #buscar-catalogo (enlace desde el ícono del menú lateral / inferior). Sin barra fija duplicada. --}}
         <div
             id="buscar-catalogo"
@@ -166,7 +204,7 @@
             </nav>
         @endif
 
-        @if (! empty($folderBrowseRows))
+        @if (! empty($folderBrowseRows) && ($section !== 'todas' || ($lib ?? '') !== ''))
             <section class="mx-auto mb-10 max-w-6xl px-1 sm:px-0" aria-labelledby="folder-nav-heading">
                 <div class="mb-4 sm:mb-5">
                     <h2 id="folder-nav-heading" class="text-sm font-bold uppercase tracking-[0.18em] text-white/45">{{ $folderBrowseTitle }}</h2>
@@ -203,7 +241,7 @@
             <section class="mx-auto max-w-6xl" aria-labelledby="catalog-grid-heading">
                 <div class="mb-4 flex flex-wrap items-end justify-between gap-2">
                     <h2 id="catalog-grid-heading" class="text-sm font-bold uppercase tracking-[0.18em] text-white/45">
-                        @if (! empty($folderBrowseRows))
+                        @if (! empty($folderBrowseRows) && ($section !== 'todas' || ($lib ?? '') !== ''))
                             Reproducir desde aquí
                         @else
                             Catálogo
@@ -217,7 +255,15 @@
                     @forelse ($contents as $item)
                         <article class="min-w-0">
                             <a href="{{ route('app.playback.prepare', $item) }}" class="group flex min-h-0 min-w-0 flex-1 flex-col" aria-label="Reproducir: {{ StreamingLabel::decode($item->title) }}">
-                                <div class="streaming-cyber-poster streaming-poster-tile relative z-0 w-full bg-slate-900 shadow-md shadow-black/30 ring-1 ring-white/10 transition duration-300 ease-out motion-reduce:transition-none motion-reduce:duration-0 motion-reduce:group-hover:translate-y-0 group-hover:z-20 group-hover:-translate-y-1 group-hover:ring-fuchsia-400/45 group-hover:shadow-lg group-hover:shadow-cyan-950/30 rounded-xl">
+                                @php
+                                    $posterTypeClass = match($item->type->value) {
+                                        'vod' => 'poster-type-vod',
+                                        'series' => 'poster-type-series',
+                                        'live' => 'poster-type-live',
+                                        default => '',
+                                    };
+                                @endphp
+                                <div class="streaming-cyber-poster streaming-poster-tile {{ $posterTypeClass }} relative z-0 w-full bg-slate-900 transition duration-300 ease-out motion-reduce:transition-none motion-reduce:duration-0 motion-reduce:group-hover:translate-y-0 group-hover:z-20 group-hover:-translate-y-1 rounded-xl">
                                     @if ($item->poster_url)
                                         <img src="{{ $item->poster_url }}" alt="" role="presentation" class="transition duration-300 ease-out motion-reduce:transition-none group-hover:brightness-110 motion-reduce:group-hover:brightness-100" loading="lazy" decoding="async">
                                     @else
@@ -232,7 +278,7 @@
                         </article>
                     @empty
                         <div class="streaming-cyber-empty col-span-full mx-auto w-full max-w-lg rounded-2xl border border-white/10 px-6 py-12 text-center backdrop-blur-sm sm:px-10 sm:py-14">
-                            @if (! empty($folderBrowseRows))
+                            @if (! empty($folderBrowseRows) && ($section !== 'todas' || ($lib ?? '') !== ''))
                                 <p class="text-lg font-semibold text-white">Todavía no hay películas ni episodios en esta carpeta.</p>
                                 <p class="mt-3 text-sm leading-relaxed text-white/55">Arriba tenés <strong class="text-white/80">títulos</strong> para abrir por carpeta. Si ya deberían verse vídeos aquí, revisá en el admin que el contenido tenga la ruta de biblioteca correcta.</p>
                             @else

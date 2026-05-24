@@ -6,7 +6,7 @@
         class="relative mb-10 min-h-[min(92vh,820px)] w-full max-w-none overflow-hidden rounded-none sm:mb-12 lg:mb-14 lg:min-h-[min(94vh,920px)] lg:rounded-2xl"
         x-data="streamingHero(@js($slides), @js([
             'previewUrlTemplate' => $heroPreviewUrlTemplate,
-            'carouselIntervalMs' => max(15000, min(180000, (int) config('streaming.hero_preview_clip_seconds', 40) * 1000)),
+            'carouselIntervalMs' => max(3000, (int) config('streaming.hero_preview_clip_seconds', 8) * 1000),
         ]))"
         aria-roledescription="carrusel"
         aria-label="Destacados del catálogo"
@@ -21,21 +21,13 @@
                 >
                     {{-- Doble capa poster: blur + nítida con object-cover (sin bandas laterales; puede recortar arriba/abajo). --}}
                     <div x-show="slide.poster" class="absolute inset-0 overflow-hidden bg-slate-950">
-                        <img
-                            :src="slide.poster"
-                            alt=""
-                            aria-hidden="true"
-                            class="pointer-events-none absolute inset-[-8%] h-[116%] w-[116%] max-w-none object-cover object-[center_22%] opacity-50 blur-3xl saturate-125"
-                            :loading="idx === 0 ? 'eager' : 'lazy'"
-                            decoding="async"
-                        >
+                        {{-- Poster oculto: solo se muestra cuando no hay video --}}
                         <img
                             :src="slide.poster"
                             :alt="slide.title"
                             class="streaming-hero-sharp-img pointer-events-none absolute inset-0 z-[1] h-full w-full min-h-0 min-w-0 object-cover object-[center_22%] transition-opacity duration-700"
-                            :class="i === idx && previewShowing ? 'opacity-0' : 'opacity-100'"
-                            :loading="idx === 0 ? 'eager' : 'lazy'"
-                            :fetchpriority="idx === 0 ? 'high' : 'low'"
+                            class="opacity-100"
+                            loading="lazy"
                             decoding="async"
                             sizes="100vw"
                         >
@@ -48,19 +40,7 @@
             </template>
         </div>
 
-        {{-- Vídeo a ancho completo (object-cover); capa sólida detrás por si el códec deja bandas. --}}
-        <div class="pointer-events-none absolute inset-0 z-[6] overflow-hidden bg-slate-950">
-            <video
-                x-ref="heroPreviewVideo"
-                class="streaming-hero-preview-video pointer-events-none absolute inset-0 h-full w-full min-h-0 min-w-0 max-h-full max-w-full object-cover object-[center_22%] transition-opacity duration-[900ms] ease-out"
-                :class="previewShowing ? 'opacity-100' : 'opacity-0'"
-                muted
-                playsinline
-                preload="metadata"
-                aria-hidden="true"
-                title=""
-            ></video>
-        </div>
+
 
         {{-- Degradado lectura a todo el ancho (sin max-w en vw): antes el to-transparent + caja estrecha dejaba ver el shell a la derecha. --}}
         <div

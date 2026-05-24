@@ -51,7 +51,9 @@ class ActiveSessionsController extends Controller
                     'browser' => $ua['browser'],
                     'os' => $ua['os'],
                     'status' => $token->playback_status ?? 'playing',
-                    'last_seen' => $token->last_seen_at?->diffForHumans() ?? '',
+                    'position_seconds' => (int) ($token->position_seconds ?? 0),
+                    'duration_seconds' => (int) ($token->duration_seconds ?? 0),
+                    'last_seen' => $token->created_at?->locale('es')->diffForHumans() ?? '',
                     'started_at' => $token->created_at?->format('H:i:s') ?? '',
                 ];
             });

@@ -43,15 +43,18 @@
                 <a href="{{ route('admin.library.folders.index') }}" class="block rounded-xl px-3 py-3 transition {{ request()->routeIs('admin.library.folders.*') ? $navActive : $navInactive }}">Carpetas del catálogo</a>
                 <a href="{{ route('admin.library.folder-posters.index') }}" class="block rounded-xl px-3 py-3 transition {{ request()->routeIs('admin.library.folder-posters.*') ? $navActive : $navInactive }}">Carátulas de carpetas</a>
                 <a href="{{ route('admin.theme-assets.edit') }}" class="block rounded-xl px-3 py-3 transition {{ request()->routeIs('admin.theme-assets.*') || request()->routeIs('admin.streaming-appearance.*') ? $navActive : $navInactive }}">Imágenes del sitio</a>
+                <a href="{{ route('admin.settings.demo') }}" class="block rounded-xl px-3 py-3 transition {{ request()->routeIs('admin.settings.demo*') ? $navActive : $navInactive }}">⏱ Config. Demos</a>
             @elseif ($u->role->value === 'reseller')
                 <p class="px-3 pb-2 pt-2 text-center text-[11px] font-bold uppercase tracking-wider text-blue-300/75">Revendedor</p>
                 <a href="{{ route('reseller.dashboard') }}" class="block rounded-xl px-3 py-3 transition {{ request()->routeIs('reseller.dashboard') ? $navActive : $navInactive }}">Dashboard</a>
                 <a href="{{ route('reseller.network.index') }}" class="block rounded-xl px-3 py-3 transition {{ request()->routeIs('reseller.network.*') ? $navActive : $navInactive }}">Mi red</a>
                 <a href="{{ route('reseller.customers.index') }}" class="block rounded-xl px-3 py-3 transition {{ request()->routeIs('reseller.customers.*') ? $navActive : $navInactive }}">Mis clientes</a>
+                <a href="{{ route('reseller.demos.create') }}" class="block rounded-xl px-3 py-3 transition {{ request()->routeIs('reseller.demos*') ? $navActive : $navInactive }}">🎬 Crear Demo</a>
             @elseif ($u->role->value === 'vendor')
                 <p class="px-3 pb-2 pt-2 text-center text-[11px] font-bold uppercase tracking-wider text-blue-300/75">Vendedor</p>
                 <a href="{{ route('vendor.dashboard') }}" class="block rounded-xl px-3 py-3 transition {{ request()->routeIs('vendor.dashboard') ? $navActive : $navInactive }}">Dashboard</a>
                 <a href="{{ route('vendor.customers.index') }}" class="block rounded-xl px-3 py-3 transition {{ request()->routeIs('vendor.customers.*') ? $navActive : $navInactive }}">Mis clientes</a>
+                <a href="{{ route('vendor.demos.create') }}" class="block rounded-xl px-3 py-3 transition {{ request()->routeIs('vendor.demos*') ? $navActive : $navInactive }}">🎬 Crear Demo</a>
             @else
                 <p class="px-3 pb-2 pt-2 text-center text-[11px] font-bold uppercase tracking-wider text-blue-300/75">Cliente</p>
                 <a href="{{ route('app.home') }}" class="block rounded-xl px-3 py-3 transition {{ request()->routeIs('app.home') ? $navActive : $navInactive }}">Inicio</a>

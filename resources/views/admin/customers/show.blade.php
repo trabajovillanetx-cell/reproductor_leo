@@ -44,6 +44,48 @@
     </div>
 
     <div class="admin-card mt-6">
+        <h2 class="mb-4 text-lg font-semibold text-slate-900 dark:text-white">Acceso IPTV / Playlist</h2>
+        <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">URLs para usar en apps IPTV como TiviMate, IPTV Smarters, VLC, etc.</p>
+        <div class="space-y-4">
+            <div>
+                <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">M3U Playlist</p>
+                <div class="flex items-center gap-2">
+                    <input
+                        type="text"
+                        readonly
+                        value="{{ route('iptv.playlist', ['username' => $customer->email, 'password' => $customer->provider_password]) }}"
+                        class="admin-input flex-1 font-mono text-xs"
+                        id="url-m3u"
+                        onclick="this.select()"
+                    >
+                    <button
+                        type="button"
+                        onclick="navigator.clipboard.writeText(document.getElementById('url-m3u').value).then(()=>this.textContent='✓ Copiado').catch(()=>{}); setTimeout(()=>this.textContent='Copiar',2000)"
+                        class="admin-btn-secondary shrink-0 text-sm"
+                    >Copiar</button>
+                </div>
+            </div>
+            <div>
+                <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Xtream Codes (TiviMate / Smarters)</p>
+                <div class="grid gap-2 sm:grid-cols-3">
+                    <div>
+                        <p class="mb-1 text-xs text-slate-500">Host</p>
+                        <input type="text" readonly value="{{ config('app.url') }}" class="admin-input w-full font-mono text-xs" onclick="this.select()">
+                    </div>
+                    <div>
+                        <p class="mb-1 text-xs text-slate-500">Usuario</p>
+                        <input type="text" readonly value="{{ $customer->email }}" class="admin-input w-full font-mono text-xs" onclick="this.select()">
+                    </div>
+                    <div>
+                        <p class="mb-1 text-xs text-slate-500">Contraseña</p>
+                        <input type="text" readonly value="{{ $customer->provider_password }}" class="admin-input w-full font-mono text-xs" onclick="this.select()">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="admin-card mt-6">
         <h2 class="mb-4 text-lg font-semibold text-slate-900 dark:text-white">Historial de suscripciones (planes)</h2>
         @if ($customer->subscriptions->isEmpty())
             <p class="text-sm text-slate-500">Sin registros de suscripción todavía.</p>

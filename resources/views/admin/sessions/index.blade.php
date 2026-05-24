@@ -46,6 +46,7 @@
                         <th class="px-3 py-3">Navegador</th>
                         <th class="px-3 py-3">SO</th>
                         <th class="px-3 py-3">Hace</th>
+                        <th class="px-3 py-3">Progreso</th>
                     </tr>
                 </thead>
                 <tbody id="sessions-body" class="divide-y divide-white/10 text-white/90">
@@ -63,6 +64,17 @@
             const tbody = document.getElementById('sessions-body');
             const emptyRow = document.getElementById('sessions-empty');
 
+            function formatProgress(pos, dur) {
+                function fmt(s) {
+                    s = Math.floor(s || 0);
+                    var h = Math.floor(s/3600), m = Math.floor((s%3600)/60), ss = s%60;
+                    if (h > 0) return h + ":" + String(m).padStart(2,"0") + ":" + String(ss).padStart(2,"0");
+                    return m + ":" + String(ss).padStart(2,"0");
+                }
+                if (!pos && !dur) return "—";
+                if (dur > 0) return fmt(pos) + " / " + fmt(dur);
+                return fmt(pos);
+            }
             function statusBadge(status) {
                 const s = (status || 'playing').toLowerCase();
                 let label = 'Playing';
@@ -122,10 +134,65 @@
                         '<td class="px-3 py-2 align-middle text-white/80">' + escapeHtml(row.device) + '</td>' +
                         '<td class="px-3 py-2 align-middle text-white/80">' + escapeHtml(row.browser) + '</td>' +
                         '<td class="px-3 py-2 align-middle text-white/80">' + escapeHtml(row.os) + '</td>' +
-                        '<td class="px-3 py-2 align-middle whitespace-nowrap text-white/65" title="' + escapeAttr(row.started_at) + '">' + escapeHtml(row.last_seen) + '</td>';
+                        '<td class="px-3 py-2 align-middle whitespace-nowrap text-white/65" title="' + escapeAttr(row.started_at) + '">' + escapeHtml(row.last_seen) + '</td>' +
+                        '<td class="px-3 py-2 align-middle whitespace-nowrap text-xs text-white/60">' + formatProgress(row.position_seconds, row.duration_seconds) + '</td>' +
+                        '<td class="px-3 py-2 align-middle">' + actionButtons(row.id) + '</td>';
                     tbody.appendChild(tr);
                 });
             }
+
+            function actionButtons(tokenId) {
+                var menuId = "menu-" + tokenId;
+                return "<div class=\"relative inline-block\">" +
+                    "<button onclick=\"toggleMenu(" + tokenId + ")\" class=\"rounded-lg px-3 py-1.5 text-xs font-semibold bg-white/10 text-white/80 hover:bg-white/20\">⚙ Acciones ▾</button>" +
+                    "<div id=\"" + menuId + "\" class=\"hidden absolute right-0 mt-1 w-36 rounded-xl border border-white/10 bg-slate-800 shadow-xl z-50 overflow-hidden\">" +
+                    "<button onclick=\"sendCmd(" + tokenId + ",'pause',0);toggleMenu(" + tokenId + ")\" class=\"w-full text-left px-4 py-2 text-xs text-amber-300 hover:bg-white/10\">⏸ Pausar</button>" +
+                    "<button onclick=\"sendCmd(" + tokenId + ",'stop',0);toggleMenu(" + tokenId + ")\" class=\"w-full text-left px-4 py-2 text-xs text-red-300 hover:bg-white/10\">⏹ Detener</button>" +
+                    "<button onclick=\"sendCmd(" + tokenId + ",'kick',0);toggleMenu(" + tokenId + ")\" class=\"w-full text-left px-4 py-2 text-xs text-red-200 hover:bg-white/10\">🚫 Kickear</button>" +
+                    "<button onclick=\"sendCmd(" + tokenId + ",'message',1);toggleMenu(" + tokenId + ")\" class=\"w-full text-left px-4 py-2 text-xs text-cyan-300 hover:bg-white/10\">💬 Mensaje</button>" +
+                    "</div></div>";
+            }
+
+            window.toggleMenu = function(tokenId) {
+                var menu = document.getElementById("menu-" + tokenId);
+                if (!menu) return;
+                var isHidden = menu.classList.contains("hidden");
+                document.querySelectorAll("[id^=menu-]").forEach(function(m) { m.classList.add("hidden"); });
+                if (isHidden) menu.classList.remove("hidden");
+                setTimeout(function() {
+                    document.addEventListener("click", function handler(e) {
+                        if (!e.target.closest("[id^=menu-]") && !e.target.closest("button")) {
+                            document.querySelectorAll("[id^=menu-]").forEach(function(m) { m.classList.add("hidden"); });
+                        }
+                        document.removeEventListener("click", handler);
+                    });
+                }, 10);
+            };
+
+            window.sendCmd = function(tokenId, cmd, needsMsg) {
+                var msg = null;
+                if (needsMsg) {
+                    msg = prompt('Escribe el mensaje para el cliente:');
+                    if (!msg) return;
+                }
+                var csrf = document.querySelector('meta[name=csrf-token]')?.content || '';
+                fetch('/admin/sessions/' + tokenId + '/command', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+                    body: JSON.stringify({ command: cmd, message: msg })
+                }).then(function(r) { return r.json(); }).then(function(d) {
+                    if (d.ok) {
+                        var labels = { pause: '⏸ Pausar', stop: '⏹ Detener', kick: '🚫 Kickear', message: '💬 Mensaje' };
+                        var n = document.createElement('div');
+                        n.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#1e293b;color:#67e8f9;border:1px solid #22d3ee;border-radius:10px;padding:10px 18px;font-size:13px;z-index:9999;';
+                        n.textContent = 'Comando enviado: ' + (labels[cmd] || cmd) + ' (llega en max 15s)';
+                        document.body.appendChild(n);
+                        setTimeout(function() { n.remove(); }, 4000);
+                    }
+                }).catch(function() {
+                    alert('Error al enviar comando.');
+                });
+            };
 
             function escapeHtml(s) {
                 const d = document.createElement('div');

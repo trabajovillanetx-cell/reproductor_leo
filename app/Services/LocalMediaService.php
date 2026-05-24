@@ -100,13 +100,20 @@ class LocalMediaService
      */
     private function rootsFromPathsEnv(string $multiKey, string $singleKey): array
     {
-        $multi = env($multiKey);
+        // Usar config() cuando está disponible (config:cache activo), fallback a env()
+        $configMap = [
+            'RCLONE_MOUNT_PATHS'  => 'media.rclone_mount_roots',
+            'RCLONE_MOUNT_PATH'   => 'media.rclone_mount_root',
+            'RAIDRIVE_LOCAL_PATHS'=> 'media.raidrive_local_roots',
+            'RAIDRIVE_LOCAL_PATH' => 'media.raidrive_local_root',
+        ];
+        $multi = config($configMap[$multiKey] ?? '', env($multiKey));
         $parts = [];
         if (is_string($multi) && trim($multi) !== '') {
             $parts = preg_split('/\s*,\s*/', trim($multi), -1, PREG_SPLIT_NO_EMPTY) ?: [];
         }
         if ($parts === []) {
-            $one = trim(str_replace('/', DIRECTORY_SEPARATOR, (string) env($singleKey, '')));
+            $one = trim(str_replace('/', DIRECTORY_SEPARATOR, (string) config($configMap[$singleKey] ?? '', env($singleKey, ''))));
             if ($one !== '') {
                 $parts = [$one];
             }
@@ -166,17 +173,17 @@ class LocalMediaService
             return false;
         }
 
+        // Intentar realpath; si falla (p.ej. caracteres especiales en rclone mount)
+        // usar el path normalizado directamente ya que is_file() confirmo existencia
         $fileReal = @realpath($absolutePath);
-        if ($fileReal === false) {
-            return false;
-        }
-
-        $fileReal = str_replace('/', DIRECTORY_SEPARATOR, $fileReal);
+        $fileNorm = $fileReal !== false
+            ? str_replace('/', DIRECTORY_SEPARATOR, $fileReal)
+            : str_replace('/', DIRECTORY_SEPARATOR, $absolutePath);
 
         $publicRoot = @realpath(storage_path('app/public'));
         if ($publicRoot !== false) {
             $publicRoot = str_replace('/', DIRECTORY_SEPARATOR, $publicRoot);
-            if (str_starts_with(strtolower($fileReal), strtolower($publicRoot))) {
+            if (str_starts_with(strtolower($fileNorm), strtolower($publicRoot))) {
                 return true;
             }
         }
@@ -187,11 +194,11 @@ class LocalMediaService
 
         foreach ($this->roots() as $root) {
             $rootReal = @realpath($root);
-            if ($rootReal === false) {
-                continue;
-            }
-            $rootReal = str_replace('/', DIRECTORY_SEPARATOR, $rootReal);
-            if (str_starts_with(strtolower($fileReal), strtolower($rootReal))) {
+            $rootNorm = $rootReal !== false
+                ? str_replace('/', DIRECTORY_SEPARATOR, $rootReal)
+                : str_replace('/', DIRECTORY_SEPARATOR, $root);
+            $rootWithSep = rtrim($rootNorm, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+            if (str_starts_with(strtolower($fileNorm), strtolower($rootWithSep))) {
                 return true;
             }
         }
@@ -663,7 +670,27 @@ class LocalMediaService
         }
         $folder = str_replace('\\', '/', $dir);
 
-        return $multiIndex !== null ? ((string) $multiIndex).'/'.$folder : $folder;
+        $result = $multiIndex !== null ? ((string) $multiIndex).'/'.$folder : $folder;
+
+        // Aplicar strip de prefijos configurados en RCLONE_STRIP_PREFIXES
+        // Formato: "idx:prefijo/a/ignorar,idx2:otro/prefijo"
+        $stripConfig = config('media.rclone_strip_prefixes', env('RCLONE_STRIP_PREFIXES', ''));
+        if (is_string($stripConfig) && trim($stripConfig) !== '') {
+            $strips = preg_split('/\s*,\s*/', trim($stripConfig, '" '), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+            foreach ($strips as $strip) {
+                $strip = trim($strip, '" ');
+                if (!str_contains($strip, ':')) continue;
+                [$idx, $prefix] = explode(':', $strip, 2);
+                $prefix = trim($prefix, '/');
+                $fullPrefix = $idx . '/' . $prefix . '/';
+                if (str_starts_with($result, $fullPrefix)) {
+                    $result = substr($result, strlen($fullPrefix));
+                    break;
+                }
+            }
+        }
+
+        return $result;
     }
 
     public function isReadableFileUnderTrustedRoot(string $rootReal, string $absolutePathname): bool

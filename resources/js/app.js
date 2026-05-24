@@ -11,11 +11,11 @@ document.addEventListener('alpine:init', () => {
         carouselIntervalMs: (() => {
             const raw = cfg.carouselIntervalMs;
             const n = Number(raw);
-            if (Number.isFinite(n) && n >= 15000 && n <= 180000) {
+            if (Number.isFinite(n) && n >= 3000 && n <= 180000) {
                 return Math.floor(n);
             }
 
-            return 40000;
+            return 8000;
         })(),
         heroHls: null,
         previewShowing: false,
@@ -102,7 +102,7 @@ document.addEventListener('alpine:init', () => {
 
         async mountPreviewForIndex(idx) {
             const slide = this.slides[idx];
-            if (!this.previewUrlTpl || !slide?.preview || !slide?.contentId) {
+            if (!slide?.preview || !slide?.streamUrl) {
                 return;
             }
 
@@ -111,39 +111,21 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
-            const url = this.previewUrlTpl.replace(
-                '__CONTENT_ID__',
-                String(slide.contentId),
-            );
-
-            let payload;
-            try {
-                const res = await fetch(url, {
-                    credentials: 'same-origin',
-                    headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                });
-                if (!res.ok) {
-                    return;
-                }
-                payload = await res.json();
-            } catch {
-                return;
-            }
-
-            if (!payload?.ok || !payload.stream_url) {
-                return;
-            }
+            const payload = {
+                ok: true,
+                stream_url: slide.streamUrl,
+                is_hls: slide.isHls ?? false,
+                mime: slide.isHls ? 'application/x-mpegURL' : 'video/mp4',
+                clip_seconds: 40,
+            };
 
             v.muted = true;
             v.loop = false;
             v.playsInline = true;
+            v.preload = 'auto';
             v.setAttribute('playsinline', '');
             v.setAttribute('webkit-playsinline', '');
-            if (slide.poster) {
-                v.setAttribute('poster', slide.poster);
-            } else {
-                v.removeAttribute('poster');
-            }
+            v.removeAttribute('poster');
 
             /** Si el archivo es más corto que la ventana, se reinicia hasta que el carrusel avance solo */
             this._videoEndedLoop = () => {
@@ -181,14 +163,60 @@ document.addEventListener('alpine:init', () => {
                         return;
                     }
                     this.heroHls = new Hls({
-                        maxBufferLength: 35,
-                        maxMaxBufferLength: 55,
+                        // Buffer
+                        maxBufferLength: 60,
+                        maxMaxBufferLength: 90,
+                        maxBufferSize: 150 * 1000 * 1000,
+                        maxBufferHole: 1.0,
+                        // Live sync — latencia ~5 segmentos (5x4s = 20s, más estable)
+                        liveSyncDurationCount: 5,
+                        liveMaxLatencyDurationCount: 10,
+                        liveDurationInfinity: true,
+                        // Inicio y niveles
                         startLevel: -1,
                         capLevelToPlayerSize: true,
+                        // Reconexión ante errores de red
+                        fragLoadingMaxRetry: 6,
+                        fragLoadingRetryDelay: 1000,
+                        fragLoadingMaxRetryTimeout: 8000,
+                        manifestLoadingMaxRetry: 4,
+                        manifestLoadingRetryDelay: 1000,
+                        levelLoadingMaxRetry: 4,
+                        levelLoadingRetryDelay: 1000,
+                        // ABR
+                        abrEwmaDefaultEstimate: 3000000,
+                        testBandwidth: true,
                     });
                     this.heroHls.loadSource(payload.stream_url);
                     this.heroHls.attachMedia(v);
                     this.heroHls.on(Hls.Events.MANIFEST_PARSED, () => tryPlay());
+                    // Reconexión automática ante errores fatales
+                    let _hlsRetries = 0;
+                    const _hlsMaxRetries = 5;
+                    this.heroHls.on(Hls.Events.ERROR, (event, data) => {
+                        if (!data.fatal) return;
+                        if (_hlsRetries >= _hlsMaxRetries) {
+                            console.warn('HLS: máximo de reintentos alcanzado');
+                            this.heroHls.destroy();
+                            return;
+                        }
+                        _hlsRetries++;
+                        const delay = Math.min(1000 * _hlsRetries, 8000);
+                        console.warn('HLS error fatal:', data.type, '— reintentando en', delay, 'ms');
+                        setTimeout(() => {
+                            if (!this.heroHls) return;
+                            if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                                this.heroHls.startLoad();
+                            } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+                                this.heroHls.recoverMediaError();
+                            } else {
+                                this.heroHls.destroy();
+                                this.heroHls = new Hls();
+                                this.heroHls.loadSource(payload.stream_url);
+                                this.heroHls.attachMedia(v);
+                            }
+                        }, delay);
+                    });
                 } catch {
                     return;
                 }
